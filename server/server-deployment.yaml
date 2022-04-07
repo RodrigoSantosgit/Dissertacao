@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: development
+  name: server-basic
+  labels:
+    app: server-basic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server-basic
+  template:
+    metadata:
+      labels:
+        app: server-basic
+    spec:
+      containers:
+      - name: server-basic
+        image: server-basic:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5000
+      restartPolicy: Always
