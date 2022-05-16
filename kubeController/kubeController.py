@@ -3,6 +3,7 @@ from kubernetes.client import api_client
 import kubernetes.client
 import datetime
 import pytz
+import p4runtime
 
 # namespace test: "default"
 # name test: "nginx-deployment"

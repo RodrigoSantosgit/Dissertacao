@@ -1,22 +1,23 @@
 import socket
 import os
 from subprocess import Popen, PIPE
+import time
 
 def main():
 
 	#host = "localhost"
-	host = "10.0.2.15"
-	#host = "172.17.0.2"
+	#host = "10.0.2.15"
+	host = "172.17.0.2"
 	#port = 50001
-	port = 30500
-	#port =  5000
+	#port = 30500
+	port =  5000
 
 	# create a socket at client side
 	# using TCP / IP protocol
 	s = socket.socket(socket.AF_INET,
 		          socket.SOCK_STREAM)
 
-	s.bind(('10.0.3.15', 0))
+	#s.bind(('10.0.3.15', 0))
 	hostname = socket.gethostname()
 	## getting the IP address using socket.gethostbyname() method
 	ip_address = socket.gethostbyname(hostname)
@@ -40,10 +41,19 @@ def main():
 	    if msg.decode() == "Bye Client":
 	    	break
 
-	    msg = []
+	    if i == 9:
+	    	msg = []
+	    	time.sleep(5)
+	    	send_msg = "Bye Server"
+	    	s.send(send_msg.encode())
+	    else:
+	       msg = []
 
-	    send_msg = input("[CLIENT] -> Message to send: ")
-	    s.send(send_msg.encode())
+	       time.sleep(5)
+	       #send_msg = input("[CLIENT] -> Message to send: ")
+	       send_msg = "MSG Number = " + str(i)
+	       s.send(send_msg.encode())
+	       i = i + 1
 
 	# disconnect the client and remove file
 	s.close()
