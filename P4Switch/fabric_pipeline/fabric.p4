@@ -77,9 +77,25 @@ control FabricIngress (inout parsed_headers_t hdr,
             spgw.apply(hdr, fabric_metadata, standard_metadata);
         }
 #endif // WITH_SPGW
+        
         if (fabric_metadata.skip_forwarding == _FALSE) {
             forwarding.apply(hdr, fabric_metadata, standard_metadata);
+            
+            if (standard_metadata.ingress_port == 0x0001){
+	         standard_metadata.egress_spec = 0x0002;
+	         hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
+	         hdr.ethernet.dst_addr = 0x02420a040004;
+	         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+            }
+            
+            if (standard_metadata.ingress_port == 0x0002){
+	         standard_metadata.egress_spec = 0x0001;
+	         hdr.ethernet.src_addr = hdr.ethernet.dst_addr;
+	         hdr.ethernet.dst_addr = 0x02420a030003;
+	         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+            }
         }
+        
         if (fabric_metadata.skip_next == _FALSE) {
             pre_next.apply(hdr, fabric_metadata);
         }
@@ -98,6 +114,7 @@ control FabricIngress (inout parsed_headers_t hdr,
 #ifdef WITH_BNG
         bng_ingress.apply(hdr, fabric_metadata, standard_metadata);
 #endif // WITH_BNG
+        
         qos.apply(fabric_metadata, standard_metadata);
     }
 }
@@ -113,6 +130,7 @@ control FabricEgress (inout parsed_headers_t hdr,
     SpgwEgress() spgw;
 #endif // WITH_SPGW
 
+        
     apply {
         _PRE_EGRESS
         pkt_io_egress.apply(hdr, fabric_metadata, standard_metadata);
@@ -126,7 +144,7 @@ control FabricEgress (inout parsed_headers_t hdr,
 #ifdef WITH_INT
         process_int_main.apply(hdr, fabric_metadata, standard_metadata);
 #endif
-    dscp_rewriter.apply(hdr, fabric_metadata, standard_metadata);
+        dscp_rewriter.apply(hdr, fabric_metadata, standard_metadata);
     }
 }
 
