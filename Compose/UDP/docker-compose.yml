@@ -1,0 +1,147 @@
+version: "3"
+
+services:
+  bmv2:
+    image: p4switch-new:latest
+    hostname: bmv2
+    container_name: bmv2
+    privileged: true
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./tmp:/tmp
+      - /home/rodrigo/fabric_modupdate.json:/behavioral-model/fabric.json
+      - /home/rodrigo/p4info_modupdate.txt:/behavioral-model/p4info.txt
+    ports:
+      - "50001:1/udp"
+      - "50002:2/udp"
+      - "50003:3/udp"
+      - "9559:9559/tcp"
+    networks:
+      cl_net:
+        ipv4_address: 10.3.0.5
+      srv_net:
+        ipv4_address: 10.4.0.5
+      control_net:
+        ipv4_address: 10.2.0.5
+    command: simple_switch_grpc -i 1@eth0 -i 2@eth2 -i 3@eth1 /behavioral-model/fabric.json --device-id 1 --debugger --log-level debug --log-file logs
+  
+  p4RuntimeController:
+    image: p4swcontroller:latest
+    hostname: p4RuntimeController
+    container_name: p4RuntimeController_udp
+    privileged : true
+    tty: true
+    stdin_open: true
+    volumes:
+      - /home/rodrigo/p4info_modupdate.txt:/usr/src/app/p4info.txt
+      - /home/rodrigo/fabric_modupdate.json:/usr/src/app/fabric.json
+    command: bash -c "python3 p4switchController.py --p4info /usr/src/app/p4info.txt --bmv2-json /usr/src/app/fabric.json"
+    networks:
+      control_net:
+        ipv4_address: 10.2.0.2
+    links:
+      - bmv2
+    depends_on:
+      - bmv2
+  
+  kubeController:
+    image: kubecontroller-api:latest
+    hostname: kubeController
+    container_name: kubeController_udp
+    privileged : true
+    tty: true
+    stdin_open: true
+    ports:
+      - "8000:8000/tcp"
+      - "80:80/tcp"
+    command: bash -c "ping -c 1 10.0.2.15 && uvicorn kubeController:app --reload --host 10.4.0.20"
+    networks:
+      control_net:
+        ipv4_address: 10.2.0.20
+      srv_net:
+        ipv4_address: 10.4.0.20
+
+  server:
+    image: server-clientlike-udp:latest
+    hostname: server-basic
+    container_name: server-clientlike-udp
+    privileged: true
+    ports:
+      - "5000:5000/udp"
+    volumes:
+      - ./tmp/server:/tmp
+    environment:
+      - host=10.3.0.3
+      - port=5001
+      - mode=rightaway
+    networks:
+      srv_net:
+        ipv4_address: 10.4.0.4
+    links:
+      - bmv2
+      - client
+      - kubeController
+    command: bash -c "route add default gw 10.4.0.5 && python3 server.py -h $${host} -p $${port} -m $${mode}"
+    depends_on:
+      - bmv2
+      - client
+      - p4RuntimeController
+      - kubeController
+
+  client:
+    image: client-basic-udp:latest
+    hostname: client-basic
+    container_name: client-basic-udp
+    privileged: true
+    ports:
+      - "5001:5001/udp"
+    volumes:
+      - ./tmp/client:/tmp
+    environment:
+      - host=10.4.0.4
+      - port=5000
+    networks:
+      cl_net:
+        ipv4_address: 10.3.0.3
+    command: bash -c "route add default gw 10.3.0.5 && python3 client.py -h $${host} -p $${port}"
+    links:
+      - bmv2
+      - kubeController
+    depends_on:
+      - bmv2
+      - p4RuntimeController
+      - kubeController
+
+networks:
+  envnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+    driver_opts:
+      com.docker.network.bridge.name: env
+         
+  srv_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.4.0.0/16
+    driver_opts:
+      com.docker.network.bridge.name: srv
+         
+  cl_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.3.0.0/16
+    driver_opts:
+      com.docker.network.bridge.name: cl
+         
+  control_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.2.0.0/16
+    driver_opts:
+      com.docker.network.bridge.name: control
