@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1
+FROM python:3
+
+RUN apt-get update && apt-get install -y \
+    iputils-ping \
+    net-tools \
+    iproute2 \
+    tcpdump
+
+RUN pip3 install fastapi && pip3 install uvicorn[standard] && pip3 install kubernetes && pip3 install pytz
+
+WORKDIR /usr/src/app
+
+COPY . .

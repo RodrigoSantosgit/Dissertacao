@@ -4,7 +4,7 @@ from fastapi import FastAPI
 import kubernetes.client
 import datetime
 import pytz
-import p4runtime
+#import p4runtime
 
 # namespace test: "default"
 # name test: "nginx-deployment"
@@ -15,16 +15,21 @@ import p4runtime
 # name service test: "frontend-service"
 # protocol test: "TCP"
 
-global client
+app = FastAPI()
 
-def main():
+global client
+global networking_v1_api
+
+client = dynamic.DynamicClient(
+        api_client.ApiClient(configuration=config.load_kube_config())
+)
+networking_v1_api = kubernetes.client.NetworkingV1Api()
+
+'''def main():
     # Creating a dynamic client
     global client
     
-    client = dynamic.DynamicClient(
-        api_client.ApiClient(configuration=config.load_kube_config())
-    )
-    networking_v1_api = kubernetes.client.NetworkingV1Api()
+    
     
     op = '99'
     while op != '0':
@@ -61,58 +66,62 @@ def main():
     	    list_ingresses(networking_v1_api)
 
     print('\n[EXITING]\n')
-
+'''
 
 ###############################################
 #		Create Deployemnt		#
 ###############################################
-def create_deployment():
+@app.put("/create-deployment")
+def create_deployment(namespace="default", name="None", app="None", container_name="None", image="None"):
 
     global client
-    
+
+    if name=="None" or app=="None" or container_name=="None" or image=="None":
+        return {"ERROR"}
+
     # fetching the deployment api
     api = client.resources.get(api_version="apps/v1", kind="Deployment")
 
     deployment = ''
 
-    while deployment == '':
-        try:
-            namespace = input("\n\t -> Namespace: ")
-            name = input("\t -> Name: ")
-            app = input ("\t -> App: ")
-            container_name = input("\t -> Container name: ")
-            image = input("\t -> Image: ")
+    #while deployment == '':
+    try:
+        #namespace = input("\n\t -> Namespace: ")
+        #name = input("\t -> Name: ")
+        #app = input ("\t -> App: ")
+        #container_name = input("\t -> Container name: ")
+        #image = input("\t -> Image: ")
             
-            
-            deployment_manifest = {
-                "apiVersion": "apps/v1",
-                "kind": "Deployment",
-                "metadata": {"labels": {"app": app}, "name": name},
-                "spec": {
-                    "replicas": 3,
-                    "selector": {"matchLabels": {"app": app}},
-                    "template": {
-                        "metadata": {"labels": {"app": app}},
-                        "spec": {
-                            "containers": [
-                                {
-                                    "name": container_name,
-                                    "image": image,
-                                    "ports": [{"containerPort": 80}],
-                                }
-                            ]
-                        },
+        deployment_manifest = {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "metadata": {"labels": {"app": app}, "name": name},
+            "spec": {
+                "replicas": 1,
+                "selector": {"matchLabels": {"app": app}},
+                "template": {
+                    "metadata": {"labels": {"app": app}},
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": container_name,
+                                "image": image,
+                                "ports": [{"containerPort": 80}],
+                            }
+                        ]
                     },
                 },
-            }
+            },
+        }
 
-            # Creating deployment `nginx-deployment` in the `default` namespace
-            deployment = api.create(body=deployment_manifest, namespace=namespace)
-        except:
-            deployment = ''
-            print('\n[ERROR] Something went wrong!\n')
-        finally:    
-            print("\n[INFO] deployment `"+ name +"` created\n")
+        # Creating deployment `nginx-deployment` in the `default` namespace
+        deployment = api.create(body=deployment_manifest, namespace=namespace)
+    except:
+        deployment = ''
+        print('\n[ERROR] Something went wrong!\n')
+        return {"ERROR"}
+    finally:    
+        print("\n[INFO] deployment `"+ name +"` created\n")
 
     # Listing deployment `nginx-deployment` in the `default` namespace
     deployment_created = api.get(name=name, namespace=namespace)
@@ -158,42 +167,53 @@ def create_deployment():
         )
     )
 
+    return {"SUCCESS"}
+
 
 ###############################################
 #		Delete Deployemnt		#
 ###############################################
-def delete_deployment():
+@app.get("/delete-deployment")
+def delete_deployment(namespace="default", name="None"):
     
     global client
     
+    if name == "None":
+       return {"ERROR"} 
     # fetching the deployment api
     api = client.resources.get(api_version="apps/v1", kind="Deployment")
     
     # Deleting deployment `nginx-deployment` from the `default` namespace
     try:
-       namespace = input("\n\t -> Namespace: ")
-       name = input("\t -> Name: ")
+       #namespace = input("\n\t -> Namespace: ")
+       #name = input("\t -> Name: ")
        deployment_deleted = api.delete(name=name, body={}, namespace=namespace)
     except:
        print("\n[ERROR] Something went wrong!")
+       return {"ERROR"}
     finally:
        print("\n[INFO] deployment `"+ name +"` deleted")
+       return {"SUCCESS"}
 
 
 ###############################################
 #		Create Service 		#
 ###############################################
-def create_service():
+@app.put("/create-service")
+def create_service(namespace="default", name="None", protocol="None", port: int = 0, targetPort: int = 0):
 
     global client
+
+    if name=="None" or protocol=="None" or port==0 or targetPort==0:
+        {"ERROR"}
 
     # fetching the service api
     api = client.resources.get(api_version="v1", kind="Service")
 
     try:
-        namespace = input("\n\t -> Namespace: ")
-        name = input("\t -> Name: ")
-        protocol = input("\t -> Protocol: ")
+        #namespace = input("\n\t -> Namespace: ")
+        #name = input("\t -> Name: ")
+        #protocol = input("\t -> Protocol: ")
 
         service_manifest = {
             "apiVersion": "v1",
@@ -201,7 +221,7 @@ def create_service():
             "metadata": {"labels": {"name": name}, "name": name, "resourceversion": "v1"},
             "spec": {
                 "ports": [
-                    {"name": "port", "port": 80, "protocol": protocol, "targetPort": 80}
+                    {"name": "port", "port": port, "protocol": protocol, "targetPort": targetPort}
                 ],
                 "selector": {"name": name},
             },
@@ -224,14 +244,15 @@ def create_service():
 
         # Patching the `spec` section of the `frontend-service`
 
-        service_manifest["spec"]["ports"] = [
-            {"name": "new", "port": 8080, "protocol": protocol, "targetPort": 8080}
-        ]
+        #service_manifest["spec"]["ports"] = [
+        #    {"name": "new", "port": 8080, "protocol": protocol, "targetPort": 8080}
+        #]
 
-        service_patched = api.patch(body=service_manifest, name=name, namespace=namespace)
+        #service_patched = api.patch(body=service_manifest, name=name, namespace=namespace)
 
     except:
         print("[ERROR] something went wrong!")
+        return {"ERROR"}
     finally:
         print("\n[INFO] service `"+ name + "` patched\n")
         print("%s\t%s\t\t\t%s" % ("NAMESPACE", "NAME", "PORTS"))
@@ -243,28 +264,35 @@ def create_service():
                 service_patched.spec.ports,
             )
         )
+        return {"SUCCESS"}
 
 
 ###############################################
 #		Delete Service 		#
 ###############################################
-def delete_service():
+@app.get("/delete-service")
+def delete_service(namespace="default", name="None"):
 
     global client
+
+    if name == "None":
+       return {"ERROR"}
 
     # fetching the service api
     api = client.resources.get(api_version="v1", kind="Service")
 
     try:
-       namespace = input("\n\t -> Namespace: ")
-       name = input("\t -> Name: ")
+       #namespace = input("\n\t -> Namespace: ")
+       #name = input("\t -> Name: ")
 
        # Deleting service `frontend-service` from the `default` namespace
        service_deleted = api.delete(name=name, body={}, namespace=namespace)
     except:
        print("\n[ERROR] something went wrong!")
+       return {"ERROR"}
     finally:
        print("\n[INFO] service `" + name + "` deleted\n")
+       return {"SUCCESS"}
 
 
 ###############################################
@@ -320,6 +348,7 @@ def delete_ingress(networking_v1_api):
 ###############################################
 #		List Pods			#
 ###############################################
+@app.get("/get-pods")
 def list_pods():
     
     config.load_kube_config()
@@ -335,6 +364,7 @@ def list_pods():
 ###############################################
 #		List Services			#
 ###############################################
+@app.get("/get-services")
 def list_services():
     
     config.load_kube_config()
@@ -350,6 +380,7 @@ def list_services():
 ###############################################
 #		List Ingresses			#
 ###############################################
+@app.get("/get-ingresses")
 def list_ingresses(networking_v1_api):
     
     config.load_kube_config()
@@ -364,5 +395,5 @@ def list_ingresses(networking_v1_api):
         print("\n[INFO] no ingresses to show!")
 
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()
