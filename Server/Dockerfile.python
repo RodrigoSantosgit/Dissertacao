@@ -5,7 +5,8 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     net-tools \
     iproute2 \
-    tcpdump
+    tcpdump \
+    ethtool
 
 RUN pip3 install requests
 
@@ -13,4 +14,4 @@ WORKDIR /usr/src/app
 
 COPY . .
 
-CMD [ "sh", "-c", "python3 server.py -h ${host} -p ${port} -m ${mode} -rmaddr ${rmaddr}" ]
+CMD [ "sh", "-c", "python3 server.py -h ${host} -p ${port} -m ${mode} -emf ${emf} -n ${name} -i ${image} --maxflows ${maxflows} --minflows ${minflows}" ]
