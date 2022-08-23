@@ -3,6 +3,35 @@ pkg_info {
 }
 tables {
   preamble {
+    id: 35117020
+    name: "MyIngress.ipv4_sub_answer"
+    alias: "ipv4_sub_answer"
+  }
+  match_fields {
+    id: 1
+    name: "standard_metadata.ingress_port"
+    bitwidth: 9
+    match_type: EXACT
+  }
+  match_fields {
+    id: 2
+    name: "hdr.ipv4.dstAddr"
+    bitwidth: 32
+    match_type: LPM
+  }
+  action_refs {
+    id: 28362983
+  }
+  action_refs {
+    id: 25652968
+  }
+  action_refs {
+    id: 21257015
+  }
+  size: 1024
+}
+tables {
+  preamble {
     id: 49062297
     name: "MyIngress.ipv4_sub"
     alias: "ipv4_sub"
@@ -100,6 +129,100 @@ actions {
     name: "newipaddr"
     bitwidth: 32
   }
+}
+actions {
+  preamble {
+    id: 28362983
+    name: "MyIngress.ipv4_sub_answer_forward"
+    alias: "ipv4_sub_answer_forward"
+  }
+  params {
+    id: 1
+    name: "dstMacAddr"
+    bitwidth: 48
+  }
+  params {
+    id: 2
+    name: "port"
+    bitwidth: 9
+  }
+  params {
+    id: 3
+    name: "originaldestIpAddr"
+    bitwidth: 32
+  }
+}
+counters {
+  preamble {
+    id: 318368535
+    name: "MyEgress.port_packet_counter"
+    alias: "port_packet_counter"
+  }
+  spec {
+    unit: PACKETS
+  }
+  size: 4
+}
+controller_packet_metadata {
+  preamble {
+    id: 76689799
+    name: "packet_out"
+    alias: "packet_out"
+    annotations: "@controller_header(\"packet_out\")"
+  }
+  metadata {
+    id: 1
+    name: "egress_port"
+    bitwidth: 16
+  }
+}
+controller_packet_metadata {
+  preamble {
+    id: 81826293
+    name: "packet_in"
+    alias: "packet_in"
+    annotations: "@controller_header(\"packet_in\")"
+  }
+  metadata {
+    id: 1
+    name: "ingress_port"
+    bitwidth: 16
+  }
+  metadata {
+    id: 2
+    name: "code"
+    bitwidth: 16
+  }
+}
+registers {
+  preamble {
+    id: 383152451
+    name: "MyIngress.flows_register"
+    alias: "flows_register"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 16
+      }
+    }
+  }
+  size: 16
+}
+registers {
+  preamble {
+    id: 379218339
+    name: "MyIngress.count_register"
+    alias: "count_register"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 16
+      }
+    }
+  }
+  size: 1
 }
 type_info {
 }
