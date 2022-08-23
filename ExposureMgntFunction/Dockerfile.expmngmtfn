@@ -5,7 +5,8 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     net-tools \
     iproute2 \
-    tcpdump
+    tcpdump \
+    ethtool
 
 RUN pip3 install fastapi && pip3 install uvicorn[standard] && pip3 install pytz && pip3 install kafka-python
 
