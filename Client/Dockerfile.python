@@ -5,10 +5,11 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     net-tools \
     iproute2 \
-    tcpdump
+    tcpdump \
+    ethtool
 
 WORKDIR /usr/src/app
 
 COPY . .
 
-CMD [ "sh", "-c", "python3 client.py -h ${host} -p ${port} -rmaddr ${rmaddr}" ]
+CMD [ "sh", "-c", "python3 client.py -h ${host} -p ${port} -rmaddr ${rmaddr} -rp $${remoteport}" ]
