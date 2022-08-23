@@ -10,19 +10,21 @@ services:
     stdin_open: true
     volumes:
       - ./tmp:/tmp
-      - /home/rodrigo/bmv2_config/basic.json:/behavioral-model/basic.json
-      - /home/rodrigo/bmv2_config/p4info.txt:/behavioral-model/p4info.txt
+      - /home/rodrigo/bmv2_config/exp/basic.json:/behavioral-model/basic.json
+      - /home/rodrigo/bmv2_config/exp/p4info.txt:/behavioral-model/p4info.txt
     networks:
-      test_cl:
+      net_internal:
         ipv4_address: 10.31.0.5
-      test_srv:
+      net_external:
         ipv4_address: 10.30.0.5
-      test_switch:
+      net_control:
         ipv4_address: 10.32.0.5
-      test_kube:
+      net_exposure:
         ipv4_address: 10.33.0.5
-    command: bash -c "ip a del 10.31.0.5 dev eth0 && ip a del 10.30.0.5 dev eth2 && simple_switch_grpc -i 1@eth2 -i 2@eth0 -i 3@eth1 /behavioral-model/basic.json --device-id 1 --debugger --log-level debug --log-file logs"
-  
+      net_edge:
+        ipv4_address: 10.35.0.5
+    command: bash -c "ip a del 10.31.0.5 dev eth4 && ip a del 10.30.0.5 dev eth3 && ip a del 10.33.0.5 dev eth2 && simple_switch_grpc -i 1@eth3 -i 2@eth4 -i 3@eth2 /behavioral-model/basic.json --device-id 1 --debugger --log-level debug --log-file logs -- --cpu-port 510"
+
   exposureManagmentFunction:
     image: expmngmtfn:v1
     hostname: expmngmtfn
@@ -33,14 +35,14 @@ services:
     ports:
       - "8000:8000/tcp"
     networks:
-      test_srv:
-        ipv4_address: 10.30.0.50
-      test_switch:
-        ipv4_address: 10.32.0.50
-    command: bash -c "uvicorn ExposureManagmentFunction:app --reload --host 10.30.0.50"
+      net_exposure:
+        ipv4_address: 10.33.0.50
+      net_managment:
+        ipv4_address: 10.34.0.50
+    command: bash -c "ip r del default via 10.33.0.1 dev eth0 && ip r add default via 10.33.0.5 && arp -s 10.33.0.5 02:42:0a:21:00:05 && ip route add 10.0.2.0/24 via 10.34.0.1 && ethtool --offload  eth0  rx off  tx off && uvicorn ExposureManagmentFunction:app --reload --host 10.33.0.50 --port 8000"
     depends_on:
       - bmv2
-  
+
   p4RuntimeController:
     image: p4netcontroller:v1
     hostname: p4netcontroller
@@ -49,18 +51,18 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - /home/rodrigo/bmv2_config/p4info.txt:/usr/src/app/p4info.txt
-      - /home/rodrigo/bmv2_config/basic.json:/usr/src/app/basic.json
+      - /home/rodrigo/bmv2_config/exp/p4info.txt:/usr/src/app/p4info.txt
+      - /home/rodrigo/bmv2_config/exp/basic.json:/usr/src/app/basic.json
     command: bash -c "python3 p4switchController.py --p4info /usr/src/app/p4info.txt --bmv2-json /usr/src/app/basic.json"
     networks:
-      test_srv:
-        ipv4_address: 10.30.0.10
-      test_switch:
+      net_control:
         ipv4_address: 10.32.0.10
+      net_managment:
+        ipv4_address: 10.34.0.10
     depends_on:
       - bmv2
       - exposureManagmentFunction
-  
+
   computationController:
     image: computationcontroller:v1
     hostname: computationController
@@ -70,73 +72,128 @@ services:
     stdin_open: true
     ports:
       - "80:80/tcp"
-    command: bash -c "ping -c 1 10.0.2.15 && python3 kubeController.py"
+    environment:
+      - api=10.33.0.50
+    command: bash -c "ip route add 10.33.0.0/24 via 10.34.0.50 && ping -c 1 10.0.2.15 && python3 kubeController.py -api $${api}"
     networks:
-      test_srv:
-        ipv4_address: 10.30.0.20
-      test_switch:
-        ipv4_address: 10.32.0.20
+      net_managment:
+       ipv4_address: 10.34.0.20
     depends_on:
       - bmv2
       - exposureManagmentFunction
-      
+
   server:
     image: server-clientlike-l2:latest
     hostname: server-basic-l2
     container_name: server-clientlike-l2
     privileged: true
-    ports:
-      - "5000:5000/udp"
+    tty: true
     volumes:
       - ./tmp/server:/tmp
     environment:
       - host=10.30.0.30
-      - port=5001
-      - mode=rightaway
-      - rmaddr=10.31.0.30
+      - port=5000
+      - mode=triggerbased
+      - name=server-udp
+      - image=server-clientlike-l2%3Alatest
+      - maxflows=20
+      - minflows=3
+      - emf=10.33.0.50
     networks:
-      test_srv:
+      net_external:
         ipv4_address: 10.30.0.30
-    command: bash -c "ip r del default via 10.30.0.1 && ip r add default via 10.30.0.5 && arp -s 10.30.0.5 02:42:0a:1e:00:05 && python3 server.py -h $${host} -p $${port} -m $${mode} -rmaddr $${rmaddr}"
+    command: bash -c "ip r del default via 10.30.0.1 dev eth0 && ip r add default via 10.30.0.5 dev eth0 && arp -s 10.30.0.5 02:42:0a:1e:00:05 && ethtool --offload  eth0  rx off  tx off  && python3 server.py -h $${host} -p $${port} -m $${mode} -emf $${emf} -n $${name} -i $${image} --maxflows $${maxflows} --minflows $${minflows}"
     depends_on:
       - bmv2
+      - exposureManagmentFunction
       - p4RuntimeController
       - computationController
 
-  client:
+  client0:
     image: client-basic-l2:latest
-    hostname: client-basic-l2
-    container_name: client-basic-l2
+    hostname: client-basic-l2-0
+    container_name: client-basic-l2-0
     privileged: true
-    ports:
-      - "5001:5001/udp"
+    tty: true
     volumes:
-      - ./tmp/client:/tmp
+      - ./tmp/client0:/tmp
     environment:
       - host=10.31.0.30
-      - port=5000
+      - port=5001
+      - remoteport=5000
       - rmaddr=10.30.0.30
     networks:
-      test_cl:
+      net_internal:
         ipv4_address: 10.31.0.30
-    command: bash -c "ip r del default via 10.31.0.1 && ip r add default via 10.31.0.5 && arp -s 10.31.0.5 02:42:0a:1f:00:05 && python3 client.py -h $${host} -rmaddr $${rmaddr} -p $${port}"
+    command: bash -c "ip r del default via 10.31.0.1 && ip r add default via 10.31.0.5 && arp -s 10.31.0.5 02:42:0a:1f:00:05 && ethtool --offload  eth0  rx off  tx off && python3 client.py -h $${host} -rmaddr $${rmaddr} -p $${port} -rp $${remoteport}"
     depends_on:
       - bmv2
+      - exposureManagmentFunction
+      - p4RuntimeController
+      - computationController
+
+  client1:
+    image: client-basic-l2:latest
+    hostname: client-basic-l2-1
+    container_name: client-basic-l2-1
+    privileged: true
+    volumes:
+      - ./tmp/client1:/tmp
+    environment:
+      - host=10.31.0.31
+      - port=5002
+      - remoteport=5000
+      - rmaddr=10.30.0.30
+    networks:
+      net_internal:
+        ipv4_address: 10.31.0.31
+    command: bash -c "ip r del default via 10.31.0.1 && ip r add default via 10.31.0.5 && arp -s 10.31.0.5 02:42:0a:1f:00:05 && ethtool --offload  eth0  rx off  tx off && python3 client.py -h $${host} -rmaddr $${rmaddr} -p $${port} -rp $${remoteport}"
+    depends_on:
+      - bmv2
+      - exposureManagmentFunction
+      - p4RuntimeController
+      - computationController
+
+  client2:
+    image: client-basic-l2:latest
+    hostname: client-basic-l2-2
+    container_name: client-basic-l2-2
+    privileged: true
+    volumes:
+      - ./tmp/client2:/tmp
+    environment:
+      - host=10.31.0.32
+      - port=5003
+      - remoteport=5000
+      - rmaddr=10.30.0.30
+    networks:
+      net_internal:
+        ipv4_address: 10.31.0.32
+    command: bash -c "ip r del default via 10.31.0.1 && ip r add default via 10.31.0.5 && arp -s 10.31.0.5 02:42:0a:1f:00:05 && ethtool --offload  eth0  rx off  tx off && python3 client.py -h $${host} -rmaddr $${rmaddr} -p $${port} -rp $${remoteport}"
+    depends_on:
+      - bmv2
+      - exposureManagmentFunction
       - p4RuntimeController
       - computationController
 
 networks:
-  test_srv:
-    name: test_srv
+  net_external:
+    name: net_external
     external: true
-  test_cl:
-    name: test_cl
+  net_internal:
+    name: net_internal
     external: true
-  test_kube:
-    name: test_kube
+  net_exposure:
+    name: net_exposure
     external: true
-  test_switch:
-    name: test_switch
+  net_control:
+    name: net_control
+    external: true
+  net_managment:
+    name: net_managment
+    external: true
+  net_edge:
+    name: net_edge
     external: true
 
 
