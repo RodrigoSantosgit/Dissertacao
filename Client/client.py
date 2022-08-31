@@ -9,7 +9,6 @@ import sys
 import socket
 import os
 import time
-import logging
 import platform   
 import subprocess
 
@@ -17,9 +16,10 @@ def main():
 
 	time.sleep(13)
 
-	remoteClientAddr = "10.20.0.4" # default
-	remport = "5000"     #default
-	port = 5001 # default
+	remoteClientAddr = "10.30.0.30" # default value
+	remport = "5000" # default value
+	port = 5001 # default value
+	host = 'localhost' # default value
 	
 	for i in range(1, len(sys.argv),2):
 	    if (sys.argv[i] == "--host" or sys.argv[i] == "-h") and i != len(sys.argv) - 1:
@@ -39,7 +39,7 @@ def main():
 	s = socket.socket(socket.AF_INET,
 		          socket.SOCK_DGRAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-	s.bind((host, 5001))
+	s.bind((host, port))
 	
 	# connect it to server and port
 	# number on local computer.
@@ -48,7 +48,7 @@ def main():
 	# Message exchange Cycle
 	i = 0
 	
-	ping(remoteClientAddr)
+	#ping(remoteClientAddr)
 	
 	time.sleep(2)
 	log(" - UDP COMMS - \n")
