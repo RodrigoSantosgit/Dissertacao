@@ -26,8 +26,6 @@ import sys
 # name service test: "frontend-service"
 # protocol test: "TCP"
 
-#app = FastAPI()
-
 global client
 global networking_v1_api
 global consumer
@@ -94,10 +92,10 @@ def checkAction(msg):
         
             # Create service
             log(" - creating service -")
-            res_ser = create_service(name= name+"-service", selector=app, protocol="TCP", port = 5000, targetPort = 50000)
+            res_ser = create_service(name= name+"-service", selector=app, protocol="UDP", port = 5000, targetPort = 5000)
         
             if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                msg_out = '[NETCONTROLLER] [INSERT] IPV4SubEntry 10.30.0.30 3 10.0.2.15 08:00:27:93:75:80'
+                msg_out = '[NETCONTROLLER] [INSERT] ipv4_lpm MyIngress.ipv4_sub_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80'
                 producer.send('NetManagment', msg_out.encode())
             else:
                 msg_out = '[MANAGMENT] [ERROR] [DELETE]'
@@ -118,10 +116,10 @@ def checkAction(msg):
         
             # Create service
             log(" - creating service -")
-            res_ser = create_service(name= name+"-service", selector=app, protocol="TCP", port = 5000, targetPort = 50000)
+            res_ser = create_service(name= name+"-service", selector=app, protocol="UDP", port = 5000, targetPort = 5000)
         
             if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                msg_out = '[NETCONTROLLER] [INSERT] IPV4SubEntry 10.30.0.30 3 10.0.2.15 08:00:27:93:75:80'
+                msg_out = '[NETCONTROLLER] [INSERT] ipv4_lpm MyIngress.ipv4_sub_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80'
                 producer.send('NetManagment', msg_out.encode())
             else:
                 msg_out = '[MANAGMENT] [ERROR] [DELETE]'
@@ -142,7 +140,7 @@ def checkAction(msg):
             res_ser = delete_service(name="server-udp-service")
         
             if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                msg_out = '[NETCONTROLLER] [DELETE] IPV4SubEntry 10.30.0.30 3 10.0.2.15 08:00:27:93:75:80'
+                msg_out = '[NETCONTROLLER] [DELETE] ipv4_lpm MyIngress.ipv4_sub_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80'
                 producer.send('NetManagment', msg_out.encode())
             else:
                 msg_out = '[MANAGMENT] [ERROR] [DELETE]'
@@ -166,7 +164,7 @@ def checkAction(msg):
                 res_ser = delete_service(name="server-udp-service")
             
                 if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                    msg_out = '[NETCONTROLLER] [DELETE] IPV4SubEntry 10.30.0.30 3 10.0.2.15 08:00:27:93:75:80'
+                    msg_out = '[NETCONTROLLER] [DELETE] ipv4_lpm MyIngress.ipv4_sub_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80'
                     producer.send('NetManagment', msg_out.encode())
                 else:
                     msg_out = '[MANAGMENT] [ERROR] [DELETE]'
@@ -218,7 +216,7 @@ def create_deployment(namespace="default", name="None", app="None", container_na
                             {
                                 "name": container_name,
                                 "image": image,
-                                "ports": [{"containerPort": 80}],
+                                "ports": [{"containerPort": 5000}],
                                 "imagePullPolicy": "Never",
                             }
                         ],
@@ -234,21 +232,6 @@ def create_deployment(namespace="default", name="None", app="None", container_na
         deployment = ''
         print('\n[ERROR] Something went wrong!\n')
         return {"ERROR"}    
-        
-
-    # Listing deployment `nginx-deployment` in the `default` namespace
-    '''deployment_created = api.get(name=name, namespace=namespace)
-
-    print("%s\t%s\t\t\t%s\t%s" % ("NAMESPACE", "NAME", "REVISION", "RESTARTED-AT"))
-    print(
-        "%s\t\t%s\t%s\t\t%s\n"
-        % (
-            deployment_created.metadata.namespace,
-            deployment_created.metadata.name,
-            deployment_created.metadata.annotations,
-            deployment_created.spec.template.metadata.annotations,
-        )
-    )'''
 
     print("\n[INFO] deployment `"+ name +"` created\n")
     return {"SUCCESS"}
@@ -284,25 +267,23 @@ def create_service(namespace="default", name="None", selector="None", protocol="
     global client
 
     if name=="None" or protocol=="None" or port==0 or targetPort==0:
-        {"ERROR"}
+        return {"ERROR"}
 
     # fetching the service api
     api = client.resources.get(api_version="v1", kind="Service")
 
     try:
-        #namespace = input("\n\t -> Namespace: ")
-        #name = input("\t -> Name: ")
-        #protocol = input("\t -> Protocol: ")
 
         service_manifest = {
             "apiVersion": "v1",
             "kind": "Service",
             "metadata": {"labels": {"name": name}, "name": name, "resourceversion": "v1"},
             "spec": {
+                "type": "NodePort",
+                "selector": {"app": selector},
                 "ports": [
-                    {"name": "port", "port": port, "protocol": protocol, "targetPort": targetPort}
+                    {"name": name, "port": port, "protocol": protocol, "targetPort": targetPort, "nodePort": 31000}
                 ],
-                "selector": {"name": selector},
             },
         }
 
@@ -320,14 +301,6 @@ def create_service(namespace="default", name="None", selector="None", protocol="
             "%s\t\t%s\n"
             % (service_created.metadata.namespace, service_created.metadata.name)
         )
-
-        # Patching the `spec` section of the `frontend-service`
-
-        #service_manifest["spec"]["ports"] = [
-        #    {"name": "new", "port": 8080, "protocol": protocol, "targetPort": 8080}
-        #]
-
-        #service_patched = api.patch(body=service_manifest, name=name, namespace=namespace)
 
     except:
         print("[ERROR] something went wrong!")
@@ -350,8 +323,6 @@ def delete_service(namespace="default", name="None"):
     api = client.resources.get(api_version="v1", kind="Service")
 
     try:
-       #namespace = input("\n\t -> Namespace: ")
-       #name = input("\t -> Name: ")
 
        # Deleting service `frontend-service` from the `default` namespace
        service_deleted = api.delete(name=name, body={}, namespace=namespace)
@@ -441,23 +412,6 @@ def list_services():
     print("IP\t\tNAMESPACE\t\tNAME")
     for i in ret.items:
         print("%s\t%s\t%s" % (i.spec.cluster_ip, i.metadata.namespace, i.metadata.name))
-
-
-###############################################
-#		List Ingresses			#
-###############################################
-def list_ingresses(networking_v1_api):
-    
-    config.load_kube_config()
-
-    print("\nListing ingresses with their HOSTs:")
-    try:
-        ret = networking_v1_api.list_ingress_for_all_namespaces(watch=False)
-        print("HOST\t\tNAMESPACE\t\tNAME")
-        for i in ret.items:
-            print("%s\t%s\t%s" % (i.spec.rules.host, i.metadata.namespace, i.metadata.name))
-    except:
-        print("\n[INFO] no ingresses to show!")
 
 
 ################################################
