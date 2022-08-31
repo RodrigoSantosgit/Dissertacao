@@ -9,8 +9,8 @@ tables {
   }
   match_fields {
     id: 1
-    name: "standard_metadata.ingress_port"
-    bitwidth: 9
+    name: "hdr.ipv4.srcAddr"
+    bitwidth: 32
     match_type: EXACT
   }
   match_fields {
@@ -21,29 +21,6 @@ tables {
   }
   action_refs {
     id: 28362983
-  }
-  action_refs {
-    id: 25652968
-  }
-  action_refs {
-    id: 21257015
-  }
-  size: 1024
-}
-tables {
-  preamble {
-    id: 49062297
-    name: "MyIngress.ipv4_sub"
-    alias: "ipv4_sub"
-  }
-  match_fields {
-    id: 1
-    name: "hdr.ipv4.dstAddr"
-    bitwidth: 32
-    match_type: LPM
-  }
-  action_refs {
-    id: 29917292
   }
   action_refs {
     id: 25652968
@@ -67,6 +44,9 @@ tables {
   }
   action_refs {
     id: 28792405
+  }
+  action_refs {
+    id: 29917292
   }
   action_refs {
     id: 25652968
@@ -152,17 +132,6 @@ actions {
     bitwidth: 32
   }
 }
-counters {
-  preamble {
-    id: 318368535
-    name: "MyEgress.port_packet_counter"
-    alias: "port_packet_counter"
-  }
-  spec {
-    unit: PACKETS
-  }
-  size: 4
-}
 controller_packet_metadata {
   preamble {
     id: 76689799
@@ -204,6 +173,21 @@ registers {
     bitstring {
       bit {
         bitwidth: 16
+      }
+    }
+  }
+  size: 16
+}
+registers {
+  preamble {
+    id: 385629861
+    name: "MyIngress.timeout_register"
+    alias: "timeout_register"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 48
       }
     }
   }
