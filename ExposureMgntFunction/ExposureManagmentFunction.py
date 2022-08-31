@@ -32,7 +32,7 @@ def instantiateService(namespace="default", name="None", app="None", container_n
 		msg = '[COMPUTATIONCONTROLLER] [INSTANTIATE] [RIGHTAWAY] ' + namespace + ' ' + name + ' ' + app + ' ' + container_name + ' ' + image
 		producer.send('ComputationManagment', msg.encode())
 	except:
-		print('\n[ERROR] Something went wrong!\n')
+		log('\n[ERROR] Something went wrong!\n')
 		return {"ERROR"}
 
 	return {"SUCCESS"}
@@ -53,7 +53,7 @@ def deleteService(namespace="default", name="None"):
 		msg = '[COMPUTATIONCONTROLLER] [DELETE] [RIGHTAWAY] ' + namespace + ' ' + name
 		producer.send('ComputationManagment', msg.encode())
 	except:
-		print('\n[ERROR] Something went wrong!\n')
+		log('\n[ERROR] Something went wrong!\n')
 		return {"ERROR"}
 
 	return {"SUCCESS"}
@@ -77,14 +77,14 @@ def instantiateTriggerBasedService(namespace="default", name="None", app="None",
 		msg = '[NETCONTROLLER] [INSTANTIATE] [FLOWCOUNTER] '+ str(port) + ' ' + str(max_flows) + ' ' + str(min_flows)
 		producer.send('NetManagment', msg.encode())
 	except:
-		print('\n[ERROR] Something went wrong!\n')
+		log('\n[ERROR] Something went wrong!\n')
 		return {"ERROR"}
 
 	return {"SUCCESS"}
 	
 
 ###############################################
-#	Instantiate Service Trigger Based	#
+#		FETCH INFO			#
 ###############################################
 @app.get("/fetchInfo")
 def fetchInfo(port: int = 0):
