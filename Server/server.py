@@ -7,7 +7,6 @@
 
 import sys
 import socket
-import logging
 import time
 import platform   
 import subprocess
@@ -69,6 +68,8 @@ def main():
 	# and port number
 	conn.bind((host, serv_port))
 	
+	conn.settimeout(10)
+	
 	## PROCESSING -------
 	time.sleep(2)
 
@@ -80,7 +81,11 @@ def main():
 	while True:
 		
 		while not msg:
-			msg, addr = conn.recvfrom(1024)
+			try:
+				msg, addr = conn.recvfrom(1024)
+			except:
+				log("Exiting")
+				sys.exit(0)
 
 		if msg.decode() == "Bye Server":
 			conn.sendto(b"Bye Client", (addr[0], addr[1]))
