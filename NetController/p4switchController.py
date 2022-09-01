@@ -217,11 +217,15 @@ def checkAction(msg):
 
     if action == '[INSERT]':
         log(" - creating service route -")
-        table, action_name, ipaddr, egress_port, newipaddr, newmacaddr = msg.split(' ')[2:]
+        name, table, action_name, ipaddr, egress_port, newipaddr, newmacaddr = msg.split(' ')[2:]
         
         if table == 'ipv4_lpm':
             log(" - inserting entry -")
-            insertipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr)
+            try:
+                insertipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr)
+            except:
+                msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [RIGHTAWAY] ' + name
+                producer.send('ComputationManagment', msg_out.encode())
 
     if action == '[DELETE]':
         log(" - deleting service route -")
