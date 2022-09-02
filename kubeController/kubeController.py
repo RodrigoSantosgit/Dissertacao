@@ -119,7 +119,13 @@ def checkAction(msg):
             res_ser = create_service(name= name+"-service", selector=app, protocol="UDP", port = 5000, targetPort = 5000)
         
             if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_lpm MyIngress.ipv4_sub_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80'
+                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000 '
+                producer.send('NetManagment', msg_out.encode())
+                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:1e 5000 10.31.0.30'
+                producer.send('NetManagment', msg_out.encode())
+                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:1f 5000 10.31.0.31'
+                producer.send('NetManagment', msg_out.encode())
+                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:20 5000 10.31.0.32'
                 producer.send('NetManagment', msg_out.encode())
             else:
                 msg_out = '[MANAGMENT] [ERROR] [DELETE]'
