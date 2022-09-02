@@ -63,7 +63,7 @@ def deleteService(namespace="default", name="None"):
 #	Instantiate Service Trigger Based	#
 ###############################################
 @app.put("/instantiateTriggerBasedService")
-def instantiateTriggerBasedService(namespace="default", name="None", app="None", container_name="None", image="None", port: int = 1, max_flows: int = 0, min_flows: int = 0):
+def instantiateTriggerBasedService(namespace="default", name="None", app="None", container_name="None", image="None", max_flows: int = 0, min_flows: int = 0):
 
 	global producer
 	global storage
@@ -71,10 +71,10 @@ def instantiateTriggerBasedService(namespace="default", name="None", app="None",
 	if name=="None" or app=="None" or container_name=="None" or image=="None" or max_flows == 0 or min_flows == 0:
 		return {"ERROR"}
 		
-	storage[port] = [namespace, name, app, container_name, image]
+	storage[name] = [namespace, name, app, container_name, image]
 
 	try:
-		msg = '[NETCONTROLLER] [INSTANTIATE] [FLOWCOUNTER] '+ str(port) + ' ' + str(max_flows) + ' ' + str(min_flows)
+		msg = '[NETCONTROLLER] [INSTANTIATE] [FLOWCOUNTER] ' + name + ' ' + str(max_flows) + ' ' + str(min_flows)
 		producer.send('NetManagment', msg.encode())
 	except:
 		log('\n[ERROR] Something went wrong!\n')
@@ -87,14 +87,14 @@ def instantiateTriggerBasedService(namespace="default", name="None", app="None",
 #		FETCH INFO			#
 ###############################################
 @app.get("/fetchInfo")
-def fetchInfo(port: int = 0):
+def fetchInfo(service = 'None'):
 
 	global storage
 
-	if port == 0:
+	if service == 'None':
 		return {"ERROR"}
 		
-	info = storage.get(port)
+	info = storage.get(service)
 
 	return info
 
