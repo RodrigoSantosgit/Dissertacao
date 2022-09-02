@@ -89,14 +89,14 @@ def insertSubAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst):
 #############################################################################################
 # 				INSTANTIATE FLOW COUNTER					#
 #############################################################################################
-def instantiateFlowCounter(port, max_rule, min_rule):
+def instantiateFlowCounter(service, max_rule, min_rule):
 
     global readCounterEnabled
     global port_FlowMapping
     
     readCounterEnabled = 1
     
-    port_FlowMapping[port] = [max_rule, min_rule, 0, 0]
+    port_FlowMapping[service] = [max_rule, min_rule, 0, 0]
     
     '''te = sh.TableEntry("MyIngress.flow_control")(action = "MyIngress.flow_check")
     te.match["hdr.ipv4.dstAddr"] = dstAddr
@@ -160,14 +160,14 @@ def checkFlowCounter(code):
     
     if '002X' in code and ask_inst != 1:
         log(' - Asking for k8s service instantiation - ')
-        msg_out = '[COMPUTATIONCONTROLLER] [INSTANTIATE] [TRIGGERED] ' + str(1)
+        msg_out = '[COMPUTATIONCONTROLLER] [INSTANTIATE] [TRIGGERED] ' + list(port_FlowMapping.keys())[0]
         producer.send('ComputationManagment', msg_out.encode())
         ask_inst = 1
         ask_del = 0
         
     if 'CODEDEL' in code and ask_del != 1:
         log(' - Asking for k8s service removal - ')
-        msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [TRIGGERED] ' + str(1)
+        msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [TRIGGERED] ' + list(port_FlowMapping.keys())[0]
         producer.send('ComputationManagment', msg_out.encode())
         ask_del = 1
         ask_inst = 0
@@ -236,11 +236,11 @@ def checkAction(msg):
             deleteipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr)
             
     if action == '[INSTANTIATE]':
-        impl_object, port, rule_n1, rule_n2 = msg.split(' ')[2:]
+        impl_object, service, rule_n1, rule_n2 = msg.split(' ')[2:]
         
         if impl_object == '[FLOWCOUNTER]':
             log(" - creating flow counter -")
-            instantiateFlowCounter(port, rule_n1, rule_n2)
+            instantiateFlowCounter(service, rule_n1, rule_n2)
 
 ############################################################################################
 def main(p4info_file_path, bmv2_file_path):
@@ -275,12 +275,12 @@ def main(p4info_file_path, bmv2_file_path):
         while(True):
             if readCounterEnabled == 1:
                 sendPacketOut()
-                for msg in packet_in.sniff(timeout=1):
+                for msg in packet_in.sniff(timeout=0.25):
                     code = parsePacketIn(str(msg))
                     checkFlowCounter(code)
                     #printCounter("MyEgress.port_packet_counter")
 
-            msg = consumer.poll(1000)
+            msg = consumer.poll(250)
             
             if msg:
                 for tp in msg:
