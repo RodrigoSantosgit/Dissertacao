@@ -45,15 +45,16 @@ producer = KafkaProducer(bootstrap_servers='10.0.2.15:9092')
 #############################################################################################
 # 				INSERT IPV4 LPM ENTRIES					#
 #############################################################################################
-def insertipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr=''):
+def insertipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr='', port=''):
 
     te = sh.TableEntry("MyIngress.ipv4_lpm")(action = action_name)
     te.match["hdr.ipv4.dstAddr"] = ipv4_dst
     te.action["port"] = egress_port
     te.action["dstAddr"] = macAddr
     
-    if action_name == "MyIngress.ipv4_sub_forward":
+    if action_name == "MyIngress.ipv4_nat_forward":
         te.action["newipaddr"] = newipaddr
+        te.action["dport"] = port
         te.modify()
         return
 
@@ -62,28 +63,30 @@ def insertipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr=''):
 #############################################################################################
 # 				DELETE IPV4 LPM ENTRIES					#
 #############################################################################################
-def deleteipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr=''):
+def deleteipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr='', port=''):
 
     te = sh.TableEntry("MyIngress.ipv4_lpm")(action = action_name)
     te.match["hdr.ipv4.dstAddr"] = ipv4_dst
     te.action["port"] = egress_port
     te.action["dstAddr"] = macAddr
 
-    if action_name == "MyIngress.ipv4_sub_forward":
+    if action_name == "MyIngress.ipv4_nat_forward":
         te.action["newipaddr"] = newipaddr
+        te.action["dport"] = port
 
     te.delete()
         
 #############################################################################################
 # 				INSERT IPV4 SubAnswer ENTRIES					#
 #############################################################################################
-def insertSubAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst):
-    te = sh.TableEntry("MyIngress.ipv4_sub_answer")(action = "MyIngress.ipv4_sub_answer_forward")
+def insertSubAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, port):
+    te = sh.TableEntry("MyIngress.ipv4_nat_answer")(action = "MyIngress.ipv4_nat_answer_forward")
     te.match["hdr.ipv4.srcAddr"] = srcAddr
     te.match["hdr.ipv4.dstAddr"] = ipv4_dst
     te.action["originaldestIpAddr"] = ipaddr
     te.action["port"] = egress_port
     te.action["dstMacAddr"] = destMacAddr
+    te.action["sport"] = port
     te.insert()
 
 #############################################################################################
@@ -156,7 +159,7 @@ def checkFlowCounter(code):
     global ask_inst
     global ask_del
     
-    log(" - VERYFING CODE: " + code + " - ")
+    #log(" - VERYFING CODE: " + code + " - ")
     
     if '002X' in code and ask_inst != 1:
         log(' - Asking for k8s service instantiation - ')
@@ -217,12 +220,19 @@ def checkAction(msg):
 
     if action == '[INSERT]':
         log(" - creating service route -")
-        name, table, action_name, ipaddr, egress_port, newipaddr, newmacaddr = msg.split(' ')[2:]
+        name, table, action_name, ipaddr, egress_port, newipaddr, newmacaddr, port, srcaddr = msg.split(' ')[2:]
         
         if table == 'ipv4_lpm':
             log(" - inserting entry -")
             try:
-                insertipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr)
+                insertipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr, port)
+            except:
+                msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [RIGHTAWAY] ' + name
+                producer.send('ComputationManagment', msg_out.encode())
+        if table == 'ipv4_nat_answer':
+            log(" - inserting entry -")
+            try:
+                insertSubAnswerEntry(newipaddr, egress_port, newmacaddr, srcaddr, ipaddr, port)
             except:
                 msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [RIGHTAWAY] ' + name
                 producer.send('ComputationManagment', msg_out.encode())
@@ -266,21 +276,21 @@ def main(p4info_file_path, bmv2_file_path):
         insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:21:00:32", "10.33.0.50", "3")
         insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1f:00:1f", "10.31.0.31", "2")
         insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1f:00:20", "10.31.0.32", "2")
-        insertSubAnswerEntry("10.30.0.30", "2", "02:42:0a:1f:00:1e", "10.0.2.15", "10.31.0.30")
-        insertSubAnswerEntry("10.30.0.30", "2", "02:42:0a:1f:00:1f", "10.0.2.15", "10.31.0.31")
-        insertSubAnswerEntry("10.30.0.30", "2", "02:42:0a:1f:00:20", "10.0.2.15", "10.31.0.32")
+        #insertSubAnswerEntry("10.30.0.30", "2", "02:42:0a:1f:00:1e", "10.0.2.15", "10.31.0.30")
+        #insertSubAnswerEntry("10.30.0.30", "2", "02:42:0a:1f:00:1f", "10.0.2.15", "10.31.0.31")
+        #insertSubAnswerEntry("10.30.0.30", "2", "02:42:0a:1f:00:20", "10.0.2.15", "10.31.0.32")
         
         packet_in = sh.PacketIn()
         
         while(True):
             if readCounterEnabled == 1:
                 sendPacketOut()
-                for msg in packet_in.sniff(timeout=0.25):
+                for msg in packet_in.sniff(timeout=0.20):
                     code = parsePacketIn(str(msg))
                     checkFlowCounter(code)
                     #printCounter("MyEgress.port_packet_counter")
 
-            msg = consumer.poll(250)
+            msg = consumer.poll(200)
             
             if msg:
                 for tp in msg:
