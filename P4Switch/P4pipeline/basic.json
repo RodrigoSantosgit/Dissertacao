@@ -867,7 +867,7 @@
       ]
     },
     {
-      "name" : "MyIngress.ipv4_sub_forward",
+      "name" : "MyIngress.ipv4_nat_forward",
       "id" : 5,
       "runtime_data" : [
         {
@@ -881,6 +881,10 @@
         {
           "name" : "newipaddr",
           "bitwidth" : 32
+        },
+        {
+          "name" : "dport",
+          "bitwidth" : 16
         }
       ],
       "primitives" : [
@@ -1010,21 +1014,21 @@
               "value" : ["udp", "dport"]
             },
             {
-              "type" : "hexstr",
-              "value" : "0x7918"
+              "type" : "runtime_data",
+              "value" : 3
             }
           ],
           "source_info" : {
             "filename" : "basic.p4",
             "line" : 202,
             "column" : 8,
-            "source_fragment" : "hdr.udp.dport = 0x7918"
+            "source_fragment" : "hdr.udp.dport = dport"
           }
         }
       ]
     },
     {
-      "name" : "MyIngress.ipv4_sub_answer_forward",
+      "name" : "MyIngress.ipv4_nat_answer_forward",
       "id" : 6,
       "runtime_data" : [
         {
@@ -1038,6 +1042,10 @@
         {
           "name" : "originaldestIpAddr",
           "bitwidth" : 32
+        },
+        {
+          "name" : "sport",
+          "bitwidth" : 16
         }
       ],
       "primitives" : [
@@ -1167,15 +1175,15 @@
               "value" : ["udp", "sport"]
             },
             {
-              "type" : "hexstr",
-              "value" : "0x1388"
+              "type" : "runtime_data",
+              "value" : 3
             }
           ],
           "source_info" : {
             "filename" : "basic.p4",
             "line" : 211,
             "column" : 8,
-            "source_fragment" : "hdr.udp.sport = 0x1388"
+            "source_fragment" : "hdr.udp.sport = sport"
           }
         }
       ]
@@ -2075,9 +2083,9 @@
           "direct_meters" : null,
           "action_ids" : [12],
           "actions" : ["basic439"],
-          "base_default_next" : "MyIngress.ipv4_sub_answer",
+          "base_default_next" : "MyIngress.ipv4_nat_answer",
           "next_tables" : {
-            "basic439" : "MyIngress.ipv4_sub_answer"
+            "basic439" : "MyIngress.ipv4_nat_answer"
           },
           "default_entry" : {
             "action_id" : 12,
@@ -2087,13 +2095,13 @@
           }
         },
         {
-          "name" : "MyIngress.ipv4_sub_answer",
+          "name" : "MyIngress.ipv4_nat_answer",
           "id" : 7,
           "source_info" : {
             "filename" : "basic.p4",
             "line" : 214,
             "column" : 10,
-            "source_fragment" : "ipv4_sub_answer"
+            "source_fragment" : "ipv4_nat_answer"
           },
           "key" : [
             {
@@ -2116,7 +2124,7 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [6, 2, 0],
-          "actions" : ["MyIngress.ipv4_sub_answer_forward", "MyIngress.drop", "NoAction"],
+          "actions" : ["MyIngress.ipv4_nat_answer_forward", "MyIngress.drop", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
             "__HIT__" : null,
@@ -2153,11 +2161,11 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [4, 5, 3, 1],
-          "actions" : ["MyIngress.ipv4_forward", "MyIngress.ipv4_sub_forward", "MyIngress.drop", "NoAction"],
+          "actions" : ["MyIngress.ipv4_forward", "MyIngress.ipv4_nat_forward", "MyIngress.drop", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
             "MyIngress.ipv4_forward" : null,
-            "MyIngress.ipv4_sub_forward" : null,
+            "MyIngress.ipv4_nat_forward" : null,
             "MyIngress.drop" : null,
             "NoAction" : null
           },
@@ -2296,7 +2304,7 @@
             }
           },
           "true_next" : "tbl_basic413",
-          "false_next" : "MyIngress.ipv4_sub_answer"
+          "false_next" : "MyIngress.ipv4_nat_answer"
         },
         {
           "name" : "node_12",

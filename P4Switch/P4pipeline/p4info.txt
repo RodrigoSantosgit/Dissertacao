@@ -3,9 +3,9 @@ pkg_info {
 }
 tables {
   preamble {
-    id: 35117020
-    name: "MyIngress.ipv4_sub_answer"
-    alias: "ipv4_sub_answer"
+    id: 45312783
+    name: "MyIngress.ipv4_nat_answer"
+    alias: "ipv4_nat_answer"
   }
   match_fields {
     id: 1
@@ -20,7 +20,7 @@ tables {
     match_type: LPM
   }
   action_refs {
-    id: 28362983
+    id: 29591493
   }
   action_refs {
     id: 25652968
@@ -46,7 +46,7 @@ tables {
     id: 28792405
   }
   action_refs {
-    id: 29917292
+    id: 33285504
   }
   action_refs {
     id: 25652968
@@ -90,9 +90,9 @@ actions {
 }
 actions {
   preamble {
-    id: 29917292
-    name: "MyIngress.ipv4_sub_forward"
-    alias: "ipv4_sub_forward"
+    id: 33285504
+    name: "MyIngress.ipv4_nat_forward"
+    alias: "ipv4_nat_forward"
   }
   params {
     id: 1
@@ -109,12 +109,17 @@ actions {
     name: "newipaddr"
     bitwidth: 32
   }
+  params {
+    id: 4
+    name: "dport"
+    bitwidth: 16
+  }
 }
 actions {
   preamble {
-    id: 28362983
-    name: "MyIngress.ipv4_sub_answer_forward"
-    alias: "ipv4_sub_answer_forward"
+    id: 29591493
+    name: "MyIngress.ipv4_nat_answer_forward"
+    alias: "ipv4_nat_answer_forward"
   }
   params {
     id: 1
@@ -130,6 +135,11 @@ actions {
     id: 3
     name: "originaldestIpAddr"
     bitwidth: 32
+  }
+  params {
+    id: 4
+    name: "sport"
+    bitwidth: 16
   }
 }
 controller_packet_metadata {

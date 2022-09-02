@@ -193,31 +193,31 @@ control MyIngress(inout headers hdr,
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
 
-    action ipv4_sub_forward(macAddr_t dstAddr, egressSpec_t port, ip4Addr_t newipaddr) {
+    action ipv4_nat_forward(macAddr_t dstAddr, egressSpec_t port, ip4Addr_t newipaddr, bit<16> dport) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
         hdr.ipv4.dstAddr = newipaddr;
-        hdr.udp.dport = 0x7918;
+        hdr.udp.dport = dport;
     }
 
-    action ipv4_sub_answer_forward(macAddr_t dstMacAddr, egressSpec_t port, ip4Addr_t originaldestIpAddr) {
+    action ipv4_nat_answer_forward(macAddr_t dstMacAddr, egressSpec_t port, ip4Addr_t originaldestIpAddr, bit<16> sport) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstMacAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
         hdr.ipv4.srcAddr = originaldestIpAddr;
-        hdr.udp.sport = 0x1388;
+        hdr.udp.sport = sport;
     }
 
-    table ipv4_sub_answer {
+    table ipv4_nat_answer {
         key = {
             hdr.ipv4.srcAddr: exact;
             hdr.ipv4.dstAddr: lpm;
         }
         actions = {
-            ipv4_sub_answer_forward;
+            ipv4_nat_answer_forward;
             drop;
             NoAction;
         }
@@ -231,7 +231,7 @@ control MyIngress(inout headers hdr,
         }
         actions = {
             ipv4_forward;
-            ipv4_sub_forward;
+            ipv4_nat_forward;
             drop;
             NoAction;
         }
@@ -447,7 +447,7 @@ control MyIngress(inout headers hdr,
                 
             }
             //flow_control.apply();
-            if (ipv4_sub_answer.apply().miss){
+            if (ipv4_nat_answer.apply().miss){
                 ipv4_lpm.apply();
             }
         }
