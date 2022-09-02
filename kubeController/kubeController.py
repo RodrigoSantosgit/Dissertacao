@@ -106,8 +106,8 @@ def checkAction(msg):
         if mode == '[TRIGGERED]':
             log(" - fetching deployment information -")
             
-            port = msg.split(' ')[3:]
-            info = requests.get("http://"+expMngFncAPI+":8000/fetchInfo?port=1").content.decode()
+            service = msg.split(' ')[3:]
+            info = requests.get("http://"+expMngFncAPI+":8000/fetchInfo?service="+service[0]).content.decode()
             
             namespace, name, app, container_name, image = info.replace('"', '').replace('[', '').replace(']','').split(",")
 
@@ -150,8 +150,8 @@ def checkAction(msg):
         if mode == '[TRIGGERED]':
             log(" - fetching deployment information -")
             
-            port = msg.split(' ')[3:]
-            info = requests.get("http://"+expMngFncAPI+":8000/fetchInfo?port=1").content.decode()
+            service = msg.split(' ')[3:]
+            info = requests.get("http://"+expMngFncAPI+":8000/fetchInfo?service="+service).content.decode()
             
             if info != None and info != "null":
                 namespace, name, app, container_name, image = info.replace('"', '').replace('[', '').replace(']','').split(",")
