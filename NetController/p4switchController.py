@@ -13,8 +13,8 @@ from kafka import KafkaConsumer
 from kafka import KafkaProducer
 import subprocess
 import json
-
 import grpc
+from p4.v1 import p4runtime_pb2
 
 # Import P4Runtime lib from parent utils dir
 # Probably there's a better way of doing this.
@@ -28,10 +28,15 @@ global readCounterEnabled
 global port_FlowMapping
 global ask_inst
 global ask_del
+global flows
+global next
+
+next = 0
+flows = []
 
 CPU_PORT = '510'
 
-ask_del = 0
+ask_del = 1
 ask_inst = 0
 
 port_FlowMapping = {}
@@ -113,10 +118,21 @@ def instantiateFlowCounter(service, max_rule, min_rule):
 def sendPacketOut():
 
     global CPU_PORT
+    global flows
+    global next
     
     p = sh.PacketOut()
     p.payload = b'AAAA'
     p.metadata['egress_port'] = CPU_PORT
+    
+    if len(flows) > 0:
+        if next >= len(flows) - 1:
+            next = 0
+        else:
+            next = next + 1
+        
+        p.metadata['flowid'] = str(flows[next])
+
     p.send()
 
 #############################################################################################
@@ -124,86 +140,52 @@ def sendPacketOut():
 #############################################################################################
 def parsePacketIn(msg):
     
-    value = msg.split('value: ')[2].split('"')[1]
+    global flows
+    global next
     
-    if value == None:
+    value = int(msg.packet.metadata[1].value.hex(), base=16)
+    flowid = int(msg.packet.metadata[2].value.hex(), base=16)
+    rm_flow = int(msg.packet.metadata[3].value.hex(), base=16)
+    rm_flag = int(msg.packet.metadata[4].value.hex(), base=16)
+    
+    if rm_flag == 1:
+        flows.remove(rm_flow)
+        if next > len(flows):
+            next = next - 1
+        #log(str(flows))
+    
+    if flowid not in flows:
+        flows = flows + [flowid]
+        #log(str(flows))
+    
+    if value == None or value == 0:
         return 'None'
     else:
         return value
-
-#############################################################################################
-# 					PRINT COUNTER INFO					#
-#############################################################################################
-def printCounter(counter):
-     
-    global port_FlowMapping
-    
-    log(" - Printing Counter " + counter + " value - ")
-    
-    counts = sh.CounterEntry(counter).read()
-    ports_on_watch = port_FlowMapping.keys()
-    
-    for item in counts:
-        for port in ports_on_watch:
-            if item.index == int(port):
-                num_packets = item.data.packet_count
-                log("Number of packets on port " + port + ": " + str(num_packets))
             
 #############################################################################################
 # 					CHECK fLOW COUNTER					#
 #############################################################################################
-def checkFlowCounter(code):          
+def checkFlowCounter(code):
 
     global port_FlowMapping
     global producer
     global ask_inst
     global ask_del
     
-    #log(" - VERYFING CODE: " + code + " - ")
-    
-    if '002X' in code and ask_inst != 1:
+    if code == 600 and ask_inst != 1:
         log(' - Asking for k8s service instantiation - ')
         msg_out = '[COMPUTATIONCONTROLLER] [INSTANTIATE] [TRIGGERED] ' + list(port_FlowMapping.keys())[0]
         producer.send('ComputationManagment', msg_out.encode())
         ask_inst = 1
         ask_del = 0
         
-    if 'CODEDEL' in code and ask_del != 1:
+    if code == 900 and ask_del != 1:
         log(' - Asking for k8s service removal - ')
         msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [TRIGGERED] ' + list(port_FlowMapping.keys())[0]
         producer.send('ComputationManagment', msg_out.encode())
         ask_del = 1
         ask_inst = 0
-
-    '''counts = sh.CounterEntry(counter).read()
-    ports_on_watch = port_FlowMapping.keys()
-    
-    for item in counts:
-        for port in ports_on_watch:
-            if item.index == int(port):
-                num_packets = item.data.packet_count
-                
-                if num_packets >= int(port_FlowMapping.get(port)[0]) and ask_inst == 0:
-                    log(' - Asking for k8s service instantiation - ')
-                    msg_out = '[COMPUTATIONCONTROLLER] [INSTANTIATE] [TRIGGERED] ' + port
-                    producer.send('ComputationManagment', msg_out.encode())
-                    ask_inst = 1
-                    
-                if num_packets <= int(port_FlowMapping.get(port)[1]) and ask_del == 0:
-                    log(' - Asking for k8s service removal - ')
-                    msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [TRIGGERED] ' + port
-                    producer.send('ComputationManagment', msg_out.encode())
-                    ask_del = 1
-                    
-                if num_packets == port_FlowMapping.get(port)[3]:
-                    port_FlowMapping.get(port)[2] = port_FlowMapping.get(port)[2] + 1
-                    if port_FlowMapping.get(port)[2] == 4:
-                        msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [TRIGGERED] ' + port
-                        producer.send('ComputationManagment', msg_out.encode())
-                        ask_del = 1
-                else:
-                    port_FlowMapping.get(port)[3] = num_packets
-                    port_FlowMapping.get(port)[2] = 0'''
     
 
 ###############################################
@@ -239,11 +221,13 @@ def checkAction(msg):
 
     if action == '[DELETE]':
         log(" - deleting service route -")
-        table, action_name, ipaddr, egress_port, newipaddr, newmacaddr = msg.split(' ')[2:]
+        table, action_name, ipaddr, egress_port, newipaddr, newmacaddr, port = msg.split(' ')[2:]
         
         if table == 'ipv4_lpm':
             log(" - deleting entry -")
-            deleteipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr)
+            deleteipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr, port)
+            if action_name == 'MyIngress.ipv4_nat_forward':
+                insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1e:00:1e", ipaddr, "1")
             
     if action == '[INSTANTIATE]':
         impl_object, service, rule_n1, rule_n2 = msg.split(' ')[2:]
@@ -267,6 +251,8 @@ def main(p4info_file_path, bmv2_file_path):
         election_id=(0, 1), # (high, low)
         config=sh.FwdPipeConfig(p4info_file_path, bmv2_file_path)
     )
+    
+    #sh.global_options["canonical_bytestrings"] = True
 
     try:
     
@@ -286,9 +272,8 @@ def main(p4info_file_path, bmv2_file_path):
             if readCounterEnabled == 1:
                 sendPacketOut()
                 for msg in packet_in.sniff(timeout=0.20):
-                    code = parsePacketIn(str(msg))
+                    code = parsePacketIn(msg)
                     checkFlowCounter(code)
-                    #printCounter("MyEgress.port_packet_counter")
 
             msg = consumer.poll(200)
             
