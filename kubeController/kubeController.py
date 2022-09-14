@@ -152,7 +152,7 @@ def checkAction(msg):
             res_ser = delete_service(name="server-udp-service")
         
             if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                msg_out = '[NETCONTROLLER] [DELETE] ipv4_lpm MyIngress.ipv4_sub_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80'
+                msg_out = '[NETCONTROLLER] [DELETE] ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000'
                 producer.send('NetManagment', msg_out.encode())
             else:
                 msg_out = '[MANAGMENT] [ERROR] [DELETE]'
@@ -163,7 +163,7 @@ def checkAction(msg):
             log(" - fetching deployment information -")
             
             service = msg.split(' ')[3:]
-            info = requests.get("http://"+expMngFncAPI+":8000/fetchInfo?service="+service).content.decode()
+            info = requests.get("http://"+expMngFncAPI+":8000/fetchInfo?service="+service[0]).content.decode()
             
             if info != None and info != "null":
                 namespace, name, app, container_name, image = info.replace('"', '').replace('[', '').replace(']','').split(",")
@@ -176,7 +176,7 @@ def checkAction(msg):
                 res_ser = delete_service(name="server-udp-service")
             
                 if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                    msg_out = '[NETCONTROLLER] [DELETE] ipv4_lpm MyIngress.ipv4_sub_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80'
+                    msg_out = '[NETCONTROLLER] [DELETE] ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000'
                     producer.send('NetManagment', msg_out.encode())
                 else:
                     msg_out = '[MANAGMENT] [ERROR] [DELETE]'
