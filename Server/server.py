@@ -68,7 +68,7 @@ def main():
 	# and port number
 	conn.bind((host, serv_port))
 	
-	conn.settimeout(10)
+	conn.settimeout(35)
 	
 	## PROCESSING -------
 	time.sleep(2)
@@ -85,7 +85,9 @@ def main():
 				msg, addr = conn.recvfrom(1024)
 			except:
 				log("Exiting")
-				sys.exit(0)
+				break
+		if msg == []:
+			break
 
 		if msg.decode() == "Bye Server":
 			conn.sendto(b"Bye Client", (addr[0], addr[1]))
