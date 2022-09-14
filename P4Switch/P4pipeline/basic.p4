@@ -28,11 +28,15 @@ typedef bit<32> PacketCounter_t;
 @controller_header("packet_out")
 header packet_out_header_t {
     bit<16> egress_port;
+    bit<16> flowid;
 }
 @controller_header("packet_in")
 header packet_in_header_t {
     bit<16> ingress_port;
     bit<16> code;
+    bit<16> new_flow;
+    bit<16> flow_rm;
+    bit<8> rm_flag;
 }
 
 header ethernet_t {
@@ -173,6 +177,8 @@ control MyIngress(inout headers hdr,
     register<bit<REGISTER_CELL_BIT_WIDTH>>(REGISTER_LENGTH) flows_register;
     register<bit<48>>(REGISTER_LENGTH) timeout_register;
     register<bit<REGISTER_CELL_BIT_WIDTH>>(1) count_register;
+    register<bit<REGISTER_CELL_BIT_WIDTH>>(1) latest_flow_register;
+    register<bit<1>>(1) requested_register;
     
     action drop() {
         mark_to_drop(standard_metadata);
@@ -258,20 +264,39 @@ control MyIngress(inout headers hdr,
             // requested by the controller (packet_out header) and remove the
             // packet_out header.
             standard_metadata.egress_spec = (bit<9>)hdr.packet_out.egress_port;
+            bit<16> id = hdr.packet_out.flowid;
             hdr.packet_out.setInvalid();
+            
             hdr.packet_in.setValid();
+            hdr.packet_in.rm_flag = (bit<8>)0;
+            
+            requested_register.read(meta.requested, (bit<32>)0);
+            if(meta.requested == (bit<1>)1){
+                bit<16> flow;
+                latest_flow_register.read(flow, (bit<32>)0);
+                hdr.packet_in.new_flow = flow;
+                requested_register.write((bit<32>)0, (bit<1>)0);
+            }
+            else{
+                hdr.packet_in.new_flow = 16w0;
+            }
             
             count_register.read(meta.flow_count, (bit<32>)0);
             hdr.packet_in.ingress_port = (bit<16>) CPU_PORT;
             
-            /*timeout_register.read(meta.timestamp, (bit<32>)0);
+            timeout_register.read(meta.timestamp, (bit<32>)id);
             if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
+                if (standard_metadata.ingress_global_timestamp - meta.timestamp >= (bit<48>)4000000){
                     meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
+                    timeout_register.write((bit<32>)id, (bit<48>)0);
+                    flows_register.write((bit<32>)id, (bit<16>)0);
+                    count_register.write((bit<32>)0, meta.flow_count);
+                    hdr.packet_in.flow_rm = id;
+                    hdr.packet_in.rm_flag = (bit<8>)1;
                 }
             }
+            
+            /*
             timeout_register.read(meta.timestamp, (bit<32>)1);
             if (meta.timestamp != (bit<48>)0){
                 if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
@@ -422,6 +447,9 @@ control MyIngress(inout headers hdr,
                     count_register.read(meta.flow_count, (bit<32>)0);
                     meta.flow_count = meta.flow_count + 1;
                     count_register.write((bit<32>)0, meta.flow_count);
+                    latest_flow_register.write((bit<32>)0, (bit<16>)meta.flows_index1);
+                    meta.requested = (bit<1>)1;
+                    requested_register.write((bit<32>)0, meta.requested);
                 }
                  
                 /*if (meta.value2 == (bit<16>)0){

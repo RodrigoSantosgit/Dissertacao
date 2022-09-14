@@ -154,6 +154,11 @@ controller_packet_metadata {
     name: "egress_port"
     bitwidth: 16
   }
+  metadata {
+    id: 2
+    name: "flowid"
+    bitwidth: 16
+  }
 }
 controller_packet_metadata {
   preamble {
@@ -171,6 +176,21 @@ controller_packet_metadata {
     id: 2
     name: "code"
     bitwidth: 16
+  }
+  metadata {
+    id: 3
+    name: "new_flow"
+    bitwidth: 16
+  }
+  metadata {
+    id: 4
+    name: "flow_rm"
+    bitwidth: 16
+  }
+  metadata {
+    id: 5
+    name: "rm_flag"
+    bitwidth: 8
   }
 }
 registers {
@@ -213,6 +233,36 @@ registers {
     bitstring {
       bit {
         bitwidth: 16
+      }
+    }
+  }
+  size: 1
+}
+registers {
+  preamble {
+    id: 382907611
+    name: "MyIngress.latest_flow_register"
+    alias: "latest_flow_register"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 16
+      }
+    }
+  }
+  size: 1
+}
+registers {
+  preamble {
+    id: 384692412
+    name: "MyIngress.requested_register"
+    alias: "requested_register"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 1
       }
     }
   }
