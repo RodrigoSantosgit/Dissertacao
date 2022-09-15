@@ -104,26 +104,23 @@ def instantiateFlowCounter(service, max_rule, min_rule):
     
     readCounterEnabled = 1
     
-    port_FlowMapping[service] = [max_rule, min_rule, 0, 0]
-    
-    '''te = sh.TableEntry("MyIngress.flow_control")(action = "MyIngress.flow_check")
-    te.match["hdr.ipv4.dstAddr"] = dstAddr
-    te.action["maxFlows"] = max_rule
-    te.action["minFlows"] = min_rule
-    te.insert()'''
+    port_FlowMapping[service] = [max_rule, min_rule]
     
 #############################################################################################
 # 					Send PacketOut						#
 #############################################################################################
-def sendPacketOut():
+def sendPacketOut(service):
 
     global CPU_PORT
     global flows
     global next
+    global port_FlowMapping
     
     p = sh.PacketOut()
     p.payload = b'AAAA'
     p.metadata['egress_port'] = CPU_PORT
+    p.metadata['max'] = port_FlowMapping[service][0]
+    p.metadata['min'] = port_FlowMapping[service][1]
     
     if len(flows) > 0:
         if next >= len(flows) - 1:
@@ -251,8 +248,6 @@ def main(p4info_file_path, bmv2_file_path):
         election_id=(0, 1), # (high, low)
         config=sh.FwdPipeConfig(p4info_file_path, bmv2_file_path)
     )
-    
-    #sh.global_options["canonical_bytestrings"] = True
 
     try:
     
@@ -270,10 +265,11 @@ def main(p4info_file_path, bmv2_file_path):
         
         while(True):
             if readCounterEnabled == 1:
-                sendPacketOut()
-                for msg in packet_in.sniff(timeout=0.20):
-                    code = parsePacketIn(msg)
-                    checkFlowCounter(code)
+                for key in list(port_FlowMapping.keys()):
+                    sendPacketOut(key)
+                    for msg in packet_in.sniff(timeout=0.20):
+                        code = parsePacketIn(msg)
+                        checkFlowCounter(code)
 
             msg = consumer.poll(200)
             
