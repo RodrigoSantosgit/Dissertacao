@@ -79,14 +79,11 @@ def main():
 	log(" - UDP COMMS - ")
 
 	while True:
-		
-		while not msg:
-			try:
-				msg, addr = conn.recvfrom(1024)
-			except:
-				log("Exiting")
-				break
-		if msg == []:
+
+		try:
+			msg, addr = conn.recvfrom(1024)
+		except:
+			log("Exiting")
 			break
 
 		if msg.decode() == "Bye Server":
