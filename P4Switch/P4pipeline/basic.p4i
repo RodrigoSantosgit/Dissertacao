@@ -901,6 +901,8 @@ typedef bit<32> PacketCounter_t;
 header packet_out_header_t {
     bit<16> egress_port;
     bit<16> flowid;
+    bit<16> max;
+    bit<16> min;
 }
 @controller_header("packet_in")
 header packet_in_header_t {
@@ -1052,6 +1054,9 @@ control MyIngress(inout headers hdr,
     register<bit<16>>(1) latest_flow_register;
     register<bit<1>>(1) requested_register;
 
+    register<bit<16>>(1) maxflows_register;
+    register<bit<16>>(1) minflows_register;
+
     action drop() {
         mark_to_drop(standard_metadata);
     }
@@ -1137,6 +1142,16 @@ control MyIngress(inout headers hdr,
             // packet_out header.
             standard_metadata.egress_spec = (bit<9>)hdr.packet_out.egress_port;
             bit<16> id = hdr.packet_out.flowid;
+            bit<16> max;
+            bit<16> min;
+            maxflows_register.read(max, (bit<32>)0);
+            minflows_register.read(min, (bit<32>)0);
+            if (max == (bit<16>)0 && min == (bit<16>)0){
+                maxflows_register.write((bit<32>)0, hdr.packet_out.max);
+                minflows_register.write((bit<32>)0, hdr.packet_out.min);
+                max = hdr.packet_out.max;
+                min = hdr.packet_out.min;
+            }
             hdr.packet_out.setInvalid();
 
             hdr.packet_in.setValid();
@@ -1292,11 +1307,11 @@ control MyIngress(inout headers hdr,
             
             count_register.write((bit<32>)0, meta.flow_count);*/
 
-            if (meta.flow_count >= 3){
+            if (meta.flow_count >= max){
                 hdr.packet_in.code = (bit<16>) 600;
             }
 
-            if (meta.flow_count <= 2){
+            if (meta.flow_count <= min){
                 hdr.packet_in.code = (bit<16>) 900;
             }
 

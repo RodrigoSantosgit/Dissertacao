@@ -159,6 +159,16 @@ controller_packet_metadata {
     name: "flowid"
     bitwidth: 16
   }
+  metadata {
+    id: 3
+    name: "max"
+    bitwidth: 16
+  }
+  metadata {
+    id: 4
+    name: "min"
+    bitwidth: 16
+  }
 }
 controller_packet_metadata {
   preamble {
@@ -263,6 +273,36 @@ registers {
     bitstring {
       bit {
         bitwidth: 1
+      }
+    }
+  }
+  size: 1
+}
+registers {
+  preamble {
+    id: 383273296
+    name: "MyIngress.maxflows_register"
+    alias: "maxflows_register"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 16
+      }
+    }
+  }
+  size: 1
+}
+registers {
+  preamble {
+    id: 376946454
+    name: "MyIngress.minflows_register"
+    alias: "minflows_register"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 16
       }
     }
   }
