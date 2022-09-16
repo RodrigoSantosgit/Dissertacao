@@ -19,6 +19,11 @@
         ["tmp_11", 16, false],
         ["tmp_12", 32, false],
         ["tmp_13", 8, false],
+        ["tmp_14", 16, false],
+        ["tmp_15", 32, false],
+        ["tmp_16", 8, false],
+        ["tmp_17", 16, false],
+        ["tmp_18", 32, false],
         ["id_0", 16, false],
         ["max_0", 16, false],
         ["min_0", 16, false],
@@ -35,6 +40,7 @@
         ["userMetadata.timestamp", 48, false],
         ["userMetadata.requested", 1, false],
         ["userMetadata.udp_length", 16, false],
+        ["userMetadata.route_sel", 16, false],
         ["_padding_0", 7, false]
       ]
     },
@@ -435,7 +441,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 578,
+        "line" : 599,
         "column" : 8,
         "source_fragment" : "MyDeparser"
       },
@@ -451,7 +457,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 179,
+        "line" : 180,
         "column" : 26,
         "source_fragment" : "flows_register"
       },
@@ -463,7 +469,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 180,
+        "line" : 181,
         "column" : 26,
         "source_fragment" : "timeout_register"
       },
@@ -475,7 +481,7 @@
       "id" : 2,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 181,
+        "line" : 182,
         "column" : 25,
         "source_fragment" : "count_register"
       },
@@ -487,7 +493,7 @@
       "id" : 3,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 182,
+        "line" : 183,
         "column" : 25,
         "source_fragment" : "latest_flow_register"
       },
@@ -499,7 +505,7 @@
       "id" : 4,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 183,
+        "line" : 184,
         "column" : 24,
         "source_fragment" : "requested_register"
       },
@@ -511,7 +517,7 @@
       "id" : 5,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 185,
+        "line" : 186,
         "column" : 25,
         "source_fragment" : "maxflows_register"
       },
@@ -523,7 +529,7 @@
       "id" : 6,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 186,
+        "line" : 187,
         "column" : 25,
         "source_fragment" : "minflows_register"
       },
@@ -600,9 +606,36 @@
     {
       "name" : "calc_2",
       "id" : 3,
+      "algo" : "crc16",
+      "input" : [
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_14"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_15"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_16"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_17"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_18"]
+        }
+      ]
+    },
+    {
+      "name" : "calc_3",
+      "id" : 4,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 530,
+        "line" : 551,
         "column" : 8,
         "source_fragment" : "update_checksum( ..."
       },
@@ -655,11 +688,11 @@
       ]
     },
     {
-      "name" : "calc_3",
-      "id" : 4,
+      "name" : "calc_4",
+      "id" : 5,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 546,
+        "line" : 567,
         "column" : 8,
         "source_fragment" : "update_checksum_with_payload( ..."
       },
@@ -705,11 +738,11 @@
       ]
     },
     {
-      "name" : "calc_4",
-      "id" : 5,
+      "name" : "calc_5",
+      "id" : 6,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 559,
+        "line" : 580,
         "column" : 8,
         "source_fragment" : "update_checksum_with_payload( ..."
       },
@@ -770,26 +803,10 @@
       "primitives" : []
     },
     {
-      "name" : "MyIngress.drop",
+      "name" : "NoAction",
       "id" : 2,
       "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "mark_to_drop",
-          "parameters" : [
-            {
-              "type" : "header",
-              "value" : "standard_metadata"
-            }
-          ],
-          "source_info" : {
-            "filename" : "basic.p4",
-            "line" : 189,
-            "column" : 8,
-            "source_fragment" : "mark_to_drop(standard_metadata)"
-          }
-        }
-      ]
+      "primitives" : []
     },
     {
       "name" : "MyIngress.drop",
@@ -806,7 +823,51 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 189,
+            "line" : 190,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop(standard_metadata)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "MyIngress.drop",
+      "id" : 4,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mark_to_drop",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "standard_metadata"
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 190,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop(standard_metadata)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "MyIngress.drop",
+      "id" : 5,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mark_to_drop",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "standard_metadata"
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 190,
             "column" : 8,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           }
@@ -815,7 +876,7 @@
     },
     {
       "name" : "MyIngress.ipv4_forward",
-      "id" : 4,
+      "id" : 6,
       "runtime_data" : [
         {
           "name" : "dstAddr",
@@ -841,7 +902,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 201,
+            "line" : 202,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = port"
           }
@@ -860,7 +921,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 202,
+            "line" : 203,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = hdr.ethernet.dstAddr"
           }
@@ -879,7 +940,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 203,
+            "line" : 204,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dstAddr"
           }
@@ -921,7 +982,122 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
+            "line" : 205,
+            "column" : 8,
+            "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "MyIngress.ipv4_forward",
+      "id" : 7,
+      "runtime_data" : [
+        {
+          "name" : "dstAddr",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "port",
+          "bitwidth" : 9
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "egress_spec"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 1
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 202,
+            "column" : 8,
+            "source_fragment" : "standard_metadata.egress_spec = port"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "srcAddr"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ethernet", "dstAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 203,
+            "column" : 8,
+            "source_fragment" : "hdr.ethernet.srcAddr = hdr.ethernet.dstAddr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "dstAddr"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
             "line" : 204,
+            "column" : 8,
+            "source_fragment" : "hdr.ethernet.dstAddr = dstAddr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "ttl"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "+",
+                      "left" : {
+                        "type" : "field",
+                        "value" : ["ipv4", "ttl"]
+                      },
+                      "right" : {
+                        "type" : "hexstr",
+                        "value" : "0xff"
+                      }
+                    }
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0xff"
+                  }
+                }
+              }
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 205,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
@@ -930,7 +1106,7 @@
     },
     {
       "name" : "MyIngress.ipv4_nat_forward",
-      "id" : 5,
+      "id" : 8,
       "runtime_data" : [
         {
           "name" : "dstAddr",
@@ -964,7 +1140,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 208,
+            "line" : 209,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = port"
           }
@@ -983,7 +1159,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 209,
+            "line" : 210,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = hdr.ethernet.dstAddr"
           }
@@ -1002,7 +1178,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 210,
+            "line" : 211,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dstAddr"
           }
@@ -1044,7 +1220,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 211,
+            "line" : 212,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
@@ -1063,7 +1239,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 212,
+            "line" : 213,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.dstAddr = newipaddr"
           }
@@ -1082,7 +1258,168 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
+            "line" : 214,
+            "column" : 8,
+            "source_fragment" : "hdr.udp.dport = dport"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "MyIngress.ipv4_nat_forward",
+      "id" : 9,
+      "runtime_data" : [
+        {
+          "name" : "dstAddr",
+          "bitwidth" : 48
+        },
+        {
+          "name" : "port",
+          "bitwidth" : 9
+        },
+        {
+          "name" : "newipaddr",
+          "bitwidth" : 32
+        },
+        {
+          "name" : "dport",
+          "bitwidth" : 16
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "egress_spec"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 1
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 209,
+            "column" : 8,
+            "source_fragment" : "standard_metadata.egress_spec = port"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "srcAddr"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ethernet", "dstAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 210,
+            "column" : 8,
+            "source_fragment" : "hdr.ethernet.srcAddr = hdr.ethernet.dstAddr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "dstAddr"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 211,
+            "column" : 8,
+            "source_fragment" : "hdr.ethernet.dstAddr = dstAddr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "ttl"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "+",
+                      "left" : {
+                        "type" : "field",
+                        "value" : ["ipv4", "ttl"]
+                      },
+                      "right" : {
+                        "type" : "hexstr",
+                        "value" : "0xff"
+                      }
+                    }
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0xff"
+                  }
+                }
+              }
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 212,
+            "column" : 8,
+            "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "dstAddr"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 2
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
             "line" : 213,
+            "column" : 8,
+            "source_fragment" : "hdr.ipv4.dstAddr = newipaddr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["udp", "dport"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 3
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 214,
             "column" : 8,
             "source_fragment" : "hdr.udp.dport = dport"
           }
@@ -1091,7 +1428,7 @@
     },
     {
       "name" : "MyIngress.ipv4_nat_answer_forward",
-      "id" : 6,
+      "id" : 10,
       "runtime_data" : [
         {
           "name" : "dstMacAddr",
@@ -1125,7 +1462,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 217,
+            "line" : 218,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = port"
           }
@@ -1144,7 +1481,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 218,
+            "line" : 219,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = hdr.ethernet.dstAddr"
           }
@@ -1163,7 +1500,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 219,
+            "line" : 220,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dstMacAddr"
           }
@@ -1205,7 +1542,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 220,
+            "line" : 221,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
@@ -1224,7 +1561,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 221,
+            "line" : 222,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.srcAddr = originaldestIpAddr"
           }
@@ -1243,7 +1580,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 222,
+            "line" : 223,
             "column" : 8,
             "source_fragment" : "hdr.udp.sport = sport"
           }
@@ -1251,8 +1588,8 @@
       ]
     },
     {
-      "name" : "basic278",
-      "id" : 7,
+      "name" : "basic294",
+      "id" : 11,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1273,7 +1610,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 278,
+            "line" : 294,
             "column" : 16,
             "source_fragment" : "maxflows_register.write((bit<32>)0, hdr.packet_out.max)"
           }
@@ -1296,7 +1633,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 279,
+            "line" : 295,
             "column" : 16,
             "source_fragment" : "minflows_register.write((bit<32>)0, hdr.packet_out.min)"
           }
@@ -1315,7 +1652,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 280,
+            "line" : 296,
             "column" : 16,
             "source_fragment" : "max = hdr.packet_out.max"
           }
@@ -1334,7 +1671,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 281,
+            "line" : 297,
             "column" : 16,
             "source_fragment" : "min = hdr.packet_out.min"
           }
@@ -1342,8 +1679,8 @@
       ]
     },
     {
-      "name" : "basic271",
-      "id" : 8,
+      "name" : "basic287",
+      "id" : 12,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1383,7 +1720,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 271,
+            "line" : 287,
             "column" : 12,
             "source_fragment" : "standard_metadata.egress_spec = (bit<9>)hdr.packet_out.egress_port"
           }
@@ -1402,7 +1739,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 272,
+            "line" : 288,
             "column" : 12,
             "source_fragment" : "bit<16> id = hdr.packet_out.flowid;"
           }
@@ -1425,7 +1762,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 275,
+            "line" : 291,
             "column" : 12,
             "source_fragment" : "maxflows_register.read(max, (bit<32>)0)"
           }
@@ -1448,7 +1785,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 276,
+            "line" : 292,
             "column" : 12,
             "source_fragment" : "minflows_register.read(min, (bit<32>)0)"
           }
@@ -1456,8 +1793,8 @@
       ]
     },
     {
-      "name" : "basic291",
-      "id" : 9,
+      "name" : "basic307",
+      "id" : 13,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1478,7 +1815,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 291,
+            "line" : 307,
             "column" : 16,
             "source_fragment" : "latest_flow_register.read(flow, (bit<32>)0)"
           }
@@ -1497,7 +1834,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 292,
+            "line" : 308,
             "column" : 16,
             "source_fragment" : "hdr.packet_in.new_flow = flow"
           }
@@ -1520,7 +1857,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 293,
+            "line" : 309,
             "column" : 16,
             "source_fragment" : "requested_register.write((bit<32>)0, (bit<1>)0)"
           }
@@ -1528,8 +1865,8 @@
       ]
     },
     {
-      "name" : "basic296",
-      "id" : 10,
+      "name" : "basic312",
+      "id" : 14,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1546,7 +1883,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 296,
+            "line" : 312,
             "column" : 16,
             "source_fragment" : "hdr.packet_in.new_flow = 16w0"
           }
@@ -1554,8 +1891,8 @@
       ]
     },
     {
-      "name" : "basic283",
-      "id" : 11,
+      "name" : "basic299",
+      "id" : 15,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1568,7 +1905,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 283,
+            "line" : 299,
             "column" : 12,
             "source_fragment" : "hdr.packet_out.setInvalid()"
           }
@@ -1583,7 +1920,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 285,
+            "line" : 301,
             "column" : 12,
             "source_fragment" : "hdr.packet_in.setValid()"
           }
@@ -1602,7 +1939,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 286,
+            "line" : 302,
             "column" : 12,
             "source_fragment" : "hdr.packet_in.rm_flag = (bit<8>)0"
           }
@@ -1625,7 +1962,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 288,
+            "line" : 304,
             "column" : 12,
             "source_fragment" : "requested_register.read(meta.requested, (bit<32>)0)"
           }
@@ -1633,8 +1970,8 @@
       ]
     },
     {
-      "name" : "basic305",
-      "id" : 12,
+      "name" : "basic321",
+      "id" : 16,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1674,7 +2011,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 305,
+            "line" : 321,
             "column" : 20,
             "source_fragment" : "meta.flow_count = meta.flow_count - 1"
           }
@@ -1706,7 +2043,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 306,
+            "line" : 322,
             "column" : 43,
             "source_fragment" : "(bit<32>)id"
           }
@@ -1729,7 +2066,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 306,
+            "line" : 322,
             "column" : 20,
             "source_fragment" : "timeout_register.write((bit<32>)id, (bit<48>)0)"
           }
@@ -1761,7 +2098,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 307,
+            "line" : 323,
             "column" : 41,
             "source_fragment" : "(bit<32>)id"
           }
@@ -1784,7 +2121,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 307,
+            "line" : 323,
             "column" : 20,
             "source_fragment" : "flows_register.write((bit<32>)id, (bit<16>)0)"
           }
@@ -1807,7 +2144,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 308,
+            "line" : 324,
             "column" : 20,
             "source_fragment" : "count_register.write((bit<32>)0, meta.flow_count)"
           }
@@ -1826,7 +2163,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 309,
+            "line" : 325,
             "column" : 20,
             "source_fragment" : "hdr.packet_in.flow_rm = id"
           }
@@ -1845,7 +2182,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 310,
+            "line" : 326,
             "column" : 20,
             "source_fragment" : "hdr.packet_in.rm_flag = (bit<8>)1"
           }
@@ -1853,8 +2190,8 @@
       ]
     },
     {
-      "name" : "basic299",
-      "id" : 13,
+      "name" : "basic315",
+      "id" : 17,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1875,7 +2212,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 299,
+            "line" : 315,
             "column" : 12,
             "source_fragment" : "count_register.read(meta.flow_count, (bit<32>)0)"
           }
@@ -1926,7 +2263,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 302,
+            "line" : 318,
             "column" : 50,
             "source_fragment" : "(bit<32>)id"
           }
@@ -1949,7 +2286,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 302,
+            "line" : 318,
             "column" : 12,
             "source_fragment" : "timeout_register.read(meta.timestamp, (bit<32>)id)"
           }
@@ -1957,8 +2294,8 @@
       ]
     },
     {
-      "name" : "basic439",
-      "id" : 14,
+      "name" : "basic455",
+      "id" : 18,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1975,7 +2312,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 439,
+            "line" : 455,
             "column" : 16,
             "source_fragment" : "hdr.packet_in.code = (bit<16>) 600"
           }
@@ -1983,8 +2320,8 @@
       ]
     },
     {
-      "name" : "basic443",
-      "id" : 15,
+      "name" : "basic459",
+      "id" : 19,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -2001,7 +2338,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 443,
+            "line" : 459,
             "column" : 16,
             "source_fragment" : "hdr.packet_in.code = (bit<16>) 900"
           }
@@ -2009,8 +2346,8 @@
       ]
     },
     {
-      "name" : "basic462",
-      "id" : 16,
+      "name" : "basic478",
+      "id" : 20,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -2031,7 +2368,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 462,
+            "line" : 478,
             "column" : 20,
             "source_fragment" : "count_register.read(meta.flow_count, (bit<32>)0)"
           }
@@ -2073,7 +2410,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 463,
+            "line" : 479,
             "column" : 20,
             "source_fragment" : "meta.flow_count = meta.flow_count + 1"
           }
@@ -2096,7 +2433,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 464,
+            "line" : 480,
             "column" : 20,
             "source_fragment" : "count_register.write((bit<32>)0, meta.flow_count)"
           }
@@ -2138,7 +2475,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 465,
+            "line" : 481,
             "column" : 59,
             "source_fragment" : "(bit<16>)meta.flows_index1"
           }
@@ -2161,7 +2498,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 465,
+            "line" : 481,
             "column" : 20,
             "source_fragment" : "latest_flow_register.write((bit<32>)0, (bit<16>)meta.flows_index1)"
           }
@@ -2180,7 +2517,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 466,
+            "line" : 482,
             "column" : 20,
             "source_fragment" : "meta.requested = (bit<1>)1"
           }
@@ -2203,7 +2540,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 467,
+            "line" : 483,
             "column" : 20,
             "source_fragment" : "requested_register.write((bit<32>)0, meta.requested)"
           }
@@ -2211,8 +2548,8 @@
       ]
     },
     {
-      "name" : "basic453",
-      "id" : 17,
+      "name" : "basic469",
+      "id" : 21,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -2229,7 +2566,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 453,
+            "line" : 469,
             "column" : 74,
             "source_fragment" : "hdr.udp.dport"
           }
@@ -2248,7 +2585,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 453,
+            "line" : 469,
             "column" : 89,
             "source_fragment" : "hdr.ipv4.dstAddr"
           }
@@ -2267,7 +2604,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 453,
+            "line" : 469,
             "column" : 107,
             "source_fragment" : "hdr.ipv4.protocol"
           }
@@ -2286,7 +2623,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 453,
+            "line" : 469,
             "column" : 126,
             "source_fragment" : "hdr.udp.sport"
           }
@@ -2305,7 +2642,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 453,
+            "line" : 469,
             "column" : 141,
             "source_fragment" : "hdr.ipv4.srcAddr"
           }
@@ -2332,7 +2669,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 453,
+            "line" : 469,
             "column" : 16,
             "source_fragment" : "hash(meta.flows_index1, HashAlgorithm.crc16, (bit<16>)0, {hdr.udp.dport, hdr.ipv4.dstAddr, hdr.ipv4.protocol, hdr.udp.sport, hdr.ipv4.srcAddr}, (bit<16>) 16)"
           }
@@ -2355,7 +2692,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 457,
+            "line" : 473,
             "column" : 16,
             "source_fragment" : "flows_register.read(meta.value1, (bit<32>)meta.flows_index1)"
           }
@@ -2363,8 +2700,8 @@
       ]
     },
     {
-      "name" : "basic482",
-      "id" : 18,
+      "name" : "basic498",
+      "id" : 22,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -2404,7 +2741,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 482,
+            "line" : 498,
             "column" : 16,
             "source_fragment" : "meta.value1 = meta.value1 + 1"
           }
@@ -2427,7 +2764,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 486,
+            "line" : 502,
             "column" : 16,
             "source_fragment" : "flows_register.write(meta.flows_index1, meta.value1)"
           }
@@ -2450,7 +2787,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 487,
+            "line" : 503,
             "column" : 16,
             "source_fragment" : "timeout_register.write(meta.flows_index1, standard_metadata.ingress_global_timestamp)"
           }
@@ -2458,8 +2795,8 @@
       ]
     },
     {
-      "name" : "basic449",
-      "id" : 19,
+      "name" : "basic465",
+      "id" : 23,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -2476,7 +2813,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 449,
+            "line" : 465,
             "column" : 68,
             "source_fragment" : "hdr.udp.dport"
           }
@@ -2495,7 +2832,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 449,
+            "line" : 465,
             "column" : 83,
             "source_fragment" : "hdr.ipv4.dstAddr"
           }
@@ -2514,7 +2851,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 449,
+            "line" : 465,
             "column" : 101,
             "source_fragment" : "hdr.ipv4.protocol"
           }
@@ -2541,7 +2878,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 449,
+            "line" : 465,
             "column" : 12,
             "source_fragment" : "hash(meta.inc_flowid, HashAlgorithm.crc16, (bit<16>)0, {hdr.udp.dport, hdr.ipv4.dstAddr, hdr.ipv4.protocol}, (bit<16>)16)"
           }
@@ -2560,7 +2897,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 450,
+            "line" : 466,
             "column" : 77,
             "source_fragment" : "0x1388"
           }
@@ -2579,7 +2916,7 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 450,
+            "line" : 466,
             "column" : 94,
             "source_fragment" : "0x0a1e001e"
           }
@@ -2625,9 +2962,138 @@
           ],
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 450,
+            "line" : 466,
             "column" : 12,
             "source_fragment" : "hash(meta.service_id, HashAlgorithm.crc16, (bit<16>)0, {(bit<16>)0x1388, (bit<32>)0x0a1e001e, UDP}, (bit<16>)16)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "basic509",
+      "id" : 24,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_14"]
+            },
+            {
+              "type" : "field",
+              "value" : ["udp", "dport"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 509,
+            "column" : 67,
+            "source_fragment" : "hdr.udp.dport"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_15"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "dstAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 509,
+            "column" : 82,
+            "source_fragment" : "hdr.ipv4.dstAddr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_16"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "protocol"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 509,
+            "column" : 100,
+            "source_fragment" : "hdr.ipv4.protocol"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_17"]
+            },
+            {
+              "type" : "field",
+              "value" : ["udp", "sport"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 509,
+            "column" : 119,
+            "source_fragment" : "hdr.udp.sport"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_18"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "srcAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 509,
+            "column" : 134,
+            "source_fragment" : "hdr.ipv4.srcAddr"
+          }
+        },
+        {
+          "op" : "modify_field_with_hash_based_offset",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "userMetadata.route_sel"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0000"
+            },
+            {
+              "type" : "calculation",
+              "value" : "calc_2"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0002"
+            }
+          ],
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 509,
+            "column" : 12,
+            "source_fragment" : "hash(meta.route_sel, HashAlgorithm.crc16, (bit<16>)0, {hdr.udp.dport, hdr.ipv4.dstAddr, hdr.ipv4.protocol, hdr.udp.sport, hdr.ipv4.srcAddr}, (bit<16>)2)"
           }
         }
       ]
@@ -2639,18 +3105,18 @@
       "id" : 0,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 175,
+        "line" : 176,
         "column" : 8,
         "source_fragment" : "MyIngress"
       },
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "tbl_basic271",
+          "name" : "tbl_basic287",
           "id" : 0,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 271,
+            "line" : 287,
             "column" : 42,
             "source_fragment" : "= (bit<9>)hdr.packet_out.egress_port; ..."
           },
@@ -2661,25 +3127,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [8],
-          "actions" : ["basic271"],
+          "action_ids" : [12],
+          "actions" : ["basic287"],
           "base_default_next" : "node_4",
           "next_tables" : {
-            "basic271" : "node_4"
+            "basic287" : "node_4"
           },
           "default_entry" : {
-            "action_id" : 8,
+            "action_id" : 12,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic278",
+          "name" : "tbl_basic294",
           "id" : 1,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 278,
+            "line" : 294,
             "column" : 16,
             "source_fragment" : "maxflows_register.write((bit<32>)0, hdr.packet_out.max); ..."
           },
@@ -2690,25 +3156,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [7],
-          "actions" : ["basic278"],
-          "base_default_next" : "tbl_basic283",
+          "action_ids" : [11],
+          "actions" : ["basic294"],
+          "base_default_next" : "tbl_basic299",
           "next_tables" : {
-            "basic278" : "tbl_basic283"
+            "basic294" : "tbl_basic299"
           },
           "default_entry" : {
-            "action_id" : 7,
+            "action_id" : 11,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic283",
+          "name" : "tbl_basic299",
           "id" : 2,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 283,
+            "line" : 299,
             "column" : 12,
             "source_fragment" : "hdr.packet_out.setInvalid(); ..."
           },
@@ -2719,25 +3185,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [11],
-          "actions" : ["basic283"],
+          "action_ids" : [15],
+          "actions" : ["basic299"],
           "base_default_next" : "node_7",
           "next_tables" : {
-            "basic283" : "node_7"
+            "basic299" : "node_7"
           },
           "default_entry" : {
-            "action_id" : 11,
+            "action_id" : 15,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic291",
+          "name" : "tbl_basic307",
           "id" : 3,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 291,
+            "line" : 307,
             "column" : 16,
             "source_fragment" : "latest_flow_register.read(flow, (bit<32>)0); ..."
           },
@@ -2748,25 +3214,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [9],
-          "actions" : ["basic291"],
-          "base_default_next" : "tbl_basic299",
+          "action_ids" : [13],
+          "actions" : ["basic307"],
+          "base_default_next" : "tbl_basic315",
           "next_tables" : {
-            "basic291" : "tbl_basic299"
+            "basic307" : "tbl_basic315"
           },
           "default_entry" : {
-            "action_id" : 9,
+            "action_id" : 13,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic296",
+          "name" : "tbl_basic312",
           "id" : 4,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 296,
+            "line" : 312,
             "column" : 39,
             "source_fragment" : "="
           },
@@ -2777,25 +3243,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [10],
-          "actions" : ["basic296"],
-          "base_default_next" : "tbl_basic299",
+          "action_ids" : [14],
+          "actions" : ["basic312"],
+          "base_default_next" : "tbl_basic315",
           "next_tables" : {
-            "basic296" : "tbl_basic299"
+            "basic312" : "tbl_basic315"
           },
           "default_entry" : {
-            "action_id" : 10,
+            "action_id" : 14,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic299",
+          "name" : "tbl_basic315",
           "id" : 5,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 299,
+            "line" : 315,
             "column" : 12,
             "source_fragment" : "count_register.read(meta.flow_count, (bit<32>)0); ..."
           },
@@ -2806,25 +3272,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [13],
-          "actions" : ["basic299"],
+          "action_ids" : [17],
+          "actions" : ["basic315"],
           "base_default_next" : "node_11",
           "next_tables" : {
-            "basic299" : "node_11"
+            "basic315" : "node_11"
           },
           "default_entry" : {
-            "action_id" : 13,
+            "action_id" : 17,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic305",
+          "name" : "tbl_basic321",
           "id" : 6,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 305,
+            "line" : 321,
             "column" : 36,
             "source_fragment" : "= meta.flow_count - 1; ..."
           },
@@ -2835,25 +3301,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [12],
-          "actions" : ["basic305"],
+          "action_ids" : [16],
+          "actions" : ["basic321"],
           "base_default_next" : "node_14",
           "next_tables" : {
-            "basic305" : "node_14"
+            "basic321" : "node_14"
           },
           "default_entry" : {
-            "action_id" : 12,
+            "action_id" : 16,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic439",
+          "name" : "tbl_basic455",
           "id" : 7,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 439,
+            "line" : 455,
             "column" : 35,
             "source_fragment" : "="
           },
@@ -2864,25 +3330,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [14],
-          "actions" : ["basic439"],
+          "action_ids" : [18],
+          "actions" : ["basic455"],
           "base_default_next" : "node_16",
           "next_tables" : {
-            "basic439" : "node_16"
+            "basic455" : "node_16"
           },
           "default_entry" : {
-            "action_id" : 14,
+            "action_id" : 18,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic443",
+          "name" : "tbl_basic459",
           "id" : 8,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 443,
+            "line" : 459,
             "column" : 35,
             "source_fragment" : "="
           },
@@ -2893,25 +3359,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [15],
-          "actions" : ["basic443"],
+          "action_ids" : [19],
+          "actions" : ["basic459"],
           "base_default_next" : null,
           "next_tables" : {
-            "basic443" : null
+            "basic459" : null
           },
           "default_entry" : {
-            "action_id" : 15,
+            "action_id" : 19,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic449",
+          "name" : "tbl_basic465",
           "id" : 9,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 449,
+            "line" : 465,
             "column" : 12,
             "source_fragment" : "hash(meta.inc_flowid, HashAlgorithm.crc16, (bit<16>)0, {hdr.udp.dport, hdr.ipv4.dstAddr, hdr.ipv4.protocol}, (bit<16>)16); ..."
           },
@@ -2922,25 +3388,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [19],
-          "actions" : ["basic449"],
+          "action_ids" : [23],
+          "actions" : ["basic465"],
           "base_default_next" : "node_20",
           "next_tables" : {
-            "basic449" : "node_20"
+            "basic465" : "node_20"
           },
           "default_entry" : {
-            "action_id" : 19,
+            "action_id" : 23,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic453",
+          "name" : "tbl_basic469",
           "id" : 10,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 453,
+            "line" : 469,
             "column" : 16,
             "source_fragment" : "hash(meta.flows_index1, HashAlgorithm.crc16, (bit<16>)0, {hdr.udp.dport, hdr.ipv4.dstAddr, hdr.ipv4.protocol, hdr.udp.sport, hdr.ipv4.srcAddr}, (bit<16>) 16); ..."
           },
@@ -2951,25 +3417,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [17],
-          "actions" : ["basic453"],
+          "action_ids" : [21],
+          "actions" : ["basic469"],
           "base_default_next" : "node_22",
           "next_tables" : {
-            "basic453" : "node_22"
+            "basic469" : "node_22"
           },
           "default_entry" : {
-            "action_id" : 17,
+            "action_id" : 21,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic462",
+          "name" : "tbl_basic478",
           "id" : 11,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 462,
+            "line" : 478,
             "column" : 20,
             "source_fragment" : "count_register.read(meta.flow_count, (bit<32>)0); ..."
           },
@@ -2980,25 +3446,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [16],
-          "actions" : ["basic462"],
-          "base_default_next" : "tbl_basic482",
+          "action_ids" : [20],
+          "actions" : ["basic478"],
+          "base_default_next" : "tbl_basic498",
           "next_tables" : {
-            "basic462" : "tbl_basic482"
+            "basic478" : "tbl_basic498"
           },
           "default_entry" : {
-            "action_id" : 16,
+            "action_id" : 20,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_basic482",
+          "name" : "tbl_basic498",
           "id" : 12,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 482,
+            "line" : 498,
             "column" : 28,
             "source_fragment" : "= meta.value1 + 1; ..."
           },
@@ -3009,14 +3475,43 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [18],
-          "actions" : ["basic482"],
-          "base_default_next" : "MyIngress.ipv4_nat_answer",
+          "action_ids" : [22],
+          "actions" : ["basic498"],
+          "base_default_next" : "tbl_basic509",
           "next_tables" : {
-            "basic482" : "MyIngress.ipv4_nat_answer"
+            "basic498" : "tbl_basic509"
           },
           "default_entry" : {
-            "action_id" : 18,
+            "action_id" : 22,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_basic509",
+          "id" : 13,
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 509,
+            "column" : 12,
+            "source_fragment" : "hash(meta.route_sel, HashAlgorithm.crc16, (bit<16>)0, {hdr.udp.dport, hdr.ipv4.dstAddr, hdr.ipv4.protocol, hdr.udp.sport, hdr.ipv4.srcAddr}, (bit<16>)2)"
+          },
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [24],
+          "actions" : ["basic509"],
+          "base_default_next" : "MyIngress.ipv4_nat_answer",
+          "next_tables" : {
+            "basic509" : "MyIngress.ipv4_nat_answer"
+          },
+          "default_entry" : {
+            "action_id" : 24,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -3024,10 +3519,10 @@
         },
         {
           "name" : "MyIngress.ipv4_nat_answer",
-          "id" : 13,
+          "id" : 14,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 225,
+            "line" : 226,
             "column" : 10,
             "source_fragment" : "ipv4_nat_answer"
           },
@@ -3051,15 +3546,58 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [6, 2, 0],
+          "action_ids" : [10, 3, 0],
           "actions" : ["MyIngress.ipv4_nat_answer_forward", "MyIngress.drop", "NoAction"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "__HIT__" : null,
+            "__MISS__" : "MyIngress.ipv4_balance"
+          },
+          "default_entry" : {
+            "action_id" : 3,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "MyIngress.ipv4_balance",
+          "id" : 15,
+          "source_info" : {
+            "filename" : "basic.p4",
+            "line" : 240,
+            "column" : 10,
+            "source_fragment" : "ipv4_balance"
+          },
+          "key" : [
+            {
+              "match_type" : "lpm",
+              "name" : "hdr.ipv4.dstAddr",
+              "target" : ["ipv4", "dstAddr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "exact",
+              "name" : "meta.route_sel",
+              "target" : ["scalars", "userMetadata.route_sel"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "lpm",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [6, 8, 4, 1],
+          "actions" : ["MyIngress.ipv4_forward", "MyIngress.ipv4_nat_forward", "MyIngress.drop", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
             "__HIT__" : null,
             "__MISS__" : "MyIngress.ipv4_lpm"
           },
           "default_entry" : {
-            "action_id" : 2,
+            "action_id" : 4,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -3067,10 +3605,10 @@
         },
         {
           "name" : "MyIngress.ipv4_lpm",
-          "id" : 14,
+          "id" : 16,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 239,
+            "line" : 255,
             "column" : 10,
             "source_fragment" : "ipv4_lpm"
           },
@@ -3088,7 +3626,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [4, 5, 3, 1],
+          "action_ids" : [7, 9, 5, 2],
           "actions" : ["MyIngress.ipv4_forward", "MyIngress.ipv4_nat_forward", "MyIngress.drop", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
@@ -3098,7 +3636,7 @@
             "NoAction" : null
           },
           "default_entry" : {
-            "action_id" : 3,
+            "action_id" : 5,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -3112,7 +3650,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 266,
+            "line" : 282,
             "column" : 12,
             "source_fragment" : "standard_metadata.ingress_port == CPU_PORT"
           },
@@ -3130,7 +3668,7 @@
               }
             }
           },
-          "true_next" : "tbl_basic271",
+          "true_next" : "tbl_basic287",
           "false_next" : "node_18"
         },
         {
@@ -3138,7 +3676,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 277,
+            "line" : 293,
             "column" : 16,
             "source_fragment" : "max == (bit<16>)0 && min == (bit<16>)0"
           },
@@ -3176,15 +3714,15 @@
               }
             }
           },
-          "true_next" : "tbl_basic278",
-          "false_next" : "tbl_basic283"
+          "true_next" : "tbl_basic294",
+          "false_next" : "tbl_basic299"
         },
         {
           "name" : "node_7",
           "id" : 2,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 289,
+            "line" : 305,
             "column" : 15,
             "source_fragment" : "meta.requested == (bit<1>)1"
           },
@@ -3202,15 +3740,15 @@
               }
             }
           },
-          "true_next" : "tbl_basic291",
-          "false_next" : "tbl_basic296"
+          "true_next" : "tbl_basic307",
+          "false_next" : "tbl_basic312"
         },
         {
           "name" : "node_11",
           "id" : 3,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 303,
+            "line" : 319,
             "column" : 16,
             "source_fragment" : "meta.timestamp != (bit<48>)0"
           },
@@ -3236,7 +3774,7 @@
           "id" : 4,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 304,
+            "line" : 320,
             "column" : 20,
             "source_fragment" : "standard_metadata.ingress_global_timestamp - meta.timestamp >= (bit<48>)4000000"
           },
@@ -3274,7 +3812,7 @@
               }
             }
           },
-          "true_next" : "tbl_basic305",
+          "true_next" : "tbl_basic321",
           "false_next" : "node_14"
         },
         {
@@ -3282,7 +3820,7 @@
           "id" : 5,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 438,
+            "line" : 454,
             "column" : 16,
             "source_fragment" : "meta.flow_count >= max"
           },
@@ -3300,7 +3838,7 @@
               }
             }
           },
-          "true_next" : "tbl_basic439",
+          "true_next" : "tbl_basic455",
           "false_next" : "node_16"
         },
         {
@@ -3308,7 +3846,7 @@
           "id" : 6,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 442,
+            "line" : 458,
             "column" : 16,
             "source_fragment" : "meta.flow_count <= min"
           },
@@ -3327,14 +3865,14 @@
             }
           },
           "false_next" : null,
-          "true_next" : "tbl_basic443"
+          "true_next" : "tbl_basic459"
         },
         {
           "name" : "node_18",
           "id" : 7,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 447,
+            "line" : 463,
             "column" : 17,
             "source_fragment" : "hdr.ipv4.isValid()"
           },
@@ -3350,14 +3888,14 @@
             }
           },
           "false_next" : null,
-          "true_next" : "tbl_basic449"
+          "true_next" : "tbl_basic465"
         },
         {
           "name" : "node_20",
           "id" : 8,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 452,
+            "line" : 468,
             "column" : 16,
             "source_fragment" : "meta.inc_flowid == meta.service_id"
           },
@@ -3375,15 +3913,15 @@
               }
             }
           },
-          "true_next" : "tbl_basic453",
-          "false_next" : "MyIngress.ipv4_nat_answer"
+          "true_next" : "tbl_basic469",
+          "false_next" : "tbl_basic509"
         },
         {
           "name" : "node_22",
           "id" : 9,
           "source_info" : {
             "filename" : "basic.p4",
-            "line" : 461,
+            "line" : 477,
             "column" : 20,
             "source_fragment" : "meta.value1 == (bit<16>)0"
           },
@@ -3401,8 +3939,8 @@
               }
             }
           },
-          "true_next" : "tbl_basic462",
-          "false_next" : "tbl_basic482"
+          "true_next" : "tbl_basic478",
+          "false_next" : "tbl_basic498"
         }
       ]
     },
@@ -3411,7 +3949,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 504,
+        "line" : 525,
         "column" : 8,
         "source_fragment" : "MyEgress"
       },
@@ -3427,13 +3965,13 @@
       "id" : 0,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 530,
+        "line" : 551,
         "column" : 8,
         "source_fragment" : "update_checksum( ..."
       },
       "target" : ["ipv4", "hdrChecksum"],
       "type" : "generic",
-      "calculation" : "calc_2",
+      "calculation" : "calc_3",
       "verify" : false,
       "update" : true,
       "if_cond" : {
@@ -3453,13 +3991,13 @@
       "id" : 1,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 546,
+        "line" : 567,
         "column" : 8,
         "source_fragment" : "update_checksum_with_payload( ..."
       },
       "target" : ["udp", "checksum"],
       "type" : "generic",
-      "calculation" : "calc_3",
+      "calculation" : "calc_4",
       "verify" : false,
       "update" : true,
       "if_cond" : {
@@ -3482,13 +4020,13 @@
       "id" : 2,
       "source_info" : {
         "filename" : "basic.p4",
-        "line" : 559,
+        "line" : 580,
         "column" : 8,
         "source_fragment" : "update_checksum_with_payload( ..."
       },
       "target" : ["udp", "checksum"],
       "type" : "generic",
-      "calculation" : "calc_4",
+      "calculation" : "calc_5",
       "verify" : false,
       "update" : true,
       "if_cond" : {

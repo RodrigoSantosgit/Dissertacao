@@ -32,6 +32,38 @@ tables {
 }
 tables {
   preamble {
+    id: 46481478
+    name: "MyIngress.ipv4_balance"
+    alias: "ipv4_balance"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.ipv4.dstAddr"
+    bitwidth: 32
+    match_type: LPM
+  }
+  match_fields {
+    id: 2
+    name: "meta.route_sel"
+    bitwidth: 16
+    match_type: EXACT
+  }
+  action_refs {
+    id: 28792405
+  }
+  action_refs {
+    id: 33285504
+  }
+  action_refs {
+    id: 25652968
+  }
+  action_refs {
+    id: 21257015
+  }
+  size: 1024
+}
+tables {
+  preamble {
     id: 37375156
     name: "MyIngress.ipv4_lpm"
     alias: "ipv4_lpm"

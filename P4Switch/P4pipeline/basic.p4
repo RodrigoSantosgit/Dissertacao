@@ -97,6 +97,7 @@ struct metadata {
     bit<48> timestamp;
     bit<1> requested;
     bit<16> udp_length;
+    bit<16> route_sel;
 }
 
 struct headers {
@@ -229,6 +230,21 @@ control MyIngress(inout headers hdr,
         }
         actions = {
             ipv4_nat_answer_forward;
+            drop;
+            NoAction;
+        }
+        size = 1024;
+        default_action = drop();
+    }
+    
+    table ipv4_balance {
+        key = {
+            hdr.ipv4.dstAddr: lpm;
+            meta.route_sel: exact;
+        }
+        actions = {
+            ipv4_forward;
+            ipv4_nat_forward;
             drop;
             NoAction;
         }
@@ -489,9 +505,14 @@ control MyIngress(inout headers hdr,
                 flows_register.write(meta.flows_index2, meta.value3);*/
                 
             }
+            
+            hash(meta.route_sel, HashAlgorithm.crc16, (bit<16>)0, {hdr.udp.dport, hdr.ipv4.dstAddr, hdr.ipv4.protocol, hdr.udp.sport, hdr.ipv4.srcAddr}, (bit<16>)2);
+            
             //flow_control.apply();
             if (ipv4_nat_answer.apply().miss){
-                ipv4_lpm.apply();
+                if (ipv4_balance.apply().miss){
+                    ipv4_lpm.apply();
+                }
             }
         }
     }
