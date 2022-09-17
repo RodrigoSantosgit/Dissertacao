@@ -301,11 +301,12 @@ def main(p4info_file_path, bmv2_file_path):
             
             if msg:
                 for tp in msg:
-                    processed_msg = msg.get(tp)[0].value.decode()
-                    log(processed_msg)
-                    checkAction(processed_msg)
-                    processed_msg = ''
-                    msg = {}
+                    for for_proc_msg in msg.get(tp):
+                        processed_msg = for_proc_msg.value.decode()
+                        log(processed_msg)
+                        checkAction(processed_msg)
+                        processed_msg = ''
+                        msg = {}
 
     except KeyboardInterrupt:
         print(" Shutting down.")
