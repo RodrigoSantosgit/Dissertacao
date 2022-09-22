@@ -873,7 +873,6 @@ package V1Switch<H, M>(Parser<H, M> p,
                        Deparser<H> dep
                        );
 # 4 "basic.p4" 2
-
 const bit<16> TYPE_IPV4 = 0x800;
 const bit<8> UDP = 0x11;
 const bit<8> TCP = 0x06;
@@ -882,20 +881,13 @@ const bit<9> CPU_PORT = 510;
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
 *************************************************************************/
-
 typedef bit<9> egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
-
 typedef bit<32> PacketCounter_t;
 
 
 
-
-
-
-/*#define FLOWS_REGISTER register<bit<REGISTER_CELL_BIT_WIDTH>>(REGISTER_LENGTH) flows_register
-#define COUNT_REGISTER register<bit<REGISTER_CELL_BIT_WIDTH>>(1) count_register*/
 
 @controller_header("packet_out")
 header packet_out_header_t {
@@ -912,13 +904,11 @@ header packet_in_header_t {
     bit<16> flow_rm;
     bit<8> rm_flag;
 }
-
 header ethernet_t {
     macAddr_t dstAddr;
     macAddr_t srcAddr;
     bit<16> etherType;
 }
-
 header ipv4_t {
     bit<4> version;
     bit<4> ihl;
@@ -933,14 +923,12 @@ header ipv4_t {
     ip4Addr_t srcAddr;
     ip4Addr_t dstAddr;
 }
-
 header udp_t {
     bit<16> sport;
     bit<16> dport;
     bit<16> len;
     bit<16> checksum;
 }
-
 header tcp_t {
     bit<16> srcPort;
     bit<16> dstPort;
@@ -954,7 +942,6 @@ header tcp_t {
     bit<16> checksum;
     bit<16> urgentPtr;
 }
-
 struct metadata {
     /* empty */
     bit<16> service_id;
@@ -969,9 +956,7 @@ struct metadata {
     bit<48> timestamp;
     bit<1> requested;
     bit<16> udp_length;
-    bit<16> route_sel;
 }
-
 struct headers {
     ethernet_t ethernet;
     ipv4_t ipv4;
@@ -980,28 +965,23 @@ struct headers {
     packet_out_header_t packet_out;
     packet_in_header_t packet_in;
 }
-
 /*************************************************************************
 *********************** P A R S E R  ***********************************
 *************************************************************************/
-
 parser MyParser(packet_in packet,
                 out headers hdr,
                 inout metadata meta,
                 inout standard_metadata_t standard_metadata) {
-
     state start {
         transition select(standard_metadata.ingress_port) {
             CPU_PORT: parse_packet_out;
             default: parse_ethernet;
         }
     }
-
     state parse_packet_out {
         packet.extract(hdr.packet_out);
         transition parse_ethernet;
     }
-
     state parse_ethernet {
         packet.extract(hdr.ethernet);
         transition select(hdr.ethernet.etherType) {
@@ -1009,7 +989,6 @@ parser MyParser(packet_in packet,
             default: accept;
         }
     }
-
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
         transition select(hdr.ipv4.protocol){
@@ -1023,28 +1002,21 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.tcp);
         transition accept;
     }
-
     state parse_udp {
         packet.extract(hdr.udp);
         meta.udp_length = hdr.ipv4.totalLen - 20;
         transition accept;
     }
-
 }
-
 /*************************************************************************
 ************   C H E C K S U M    V E R I F I C A T I O N   *************
 *************************************************************************/
-
 control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
     apply { }
 }
-
-
 /*************************************************************************
 **************  I N G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
-
 control MyIngress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
@@ -1062,21 +1034,12 @@ control MyIngress(inout headers hdr,
         mark_to_drop(standard_metadata);
     }
 
-    /*action flow_check(bit<16> maxFlows, bit<16> minFlows) {
-        count_register.read(meta.flow_count, (bit<32>)0);
-        if (meta.flow_count >= maxFlows){
-            standard_metadata.egress_spec = CPU_PORT;
-            clone(CloneType.I2E, (bit<32>)500);
-        }
-    }*/
-
     action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
-
     action ipv4_nat_forward(macAddr_t dstAddr, egressSpec_t port, ip4Addr_t newipaddr, bit<16> dport) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
@@ -1085,7 +1048,6 @@ control MyIngress(inout headers hdr,
         hdr.ipv4.dstAddr = newipaddr;
         hdr.udp.dport = dport;
     }
-
     action ipv4_nat_answer_forward(macAddr_t dstMacAddr, egressSpec_t port, ip4Addr_t originaldestIpAddr, bit<16> sport) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
@@ -1094,7 +1056,6 @@ control MyIngress(inout headers hdr,
         hdr.ipv4.srcAddr = originaldestIpAddr;
         hdr.udp.sport = sport;
     }
-
     table ipv4_nat_answer {
         key = {
             hdr.ipv4.srcAddr: exact;
@@ -1108,22 +1069,6 @@ control MyIngress(inout headers hdr,
         size = 1024;
         default_action = drop();
     }
-
-    table ipv4_balance {
-        key = {
-            hdr.ipv4.dstAddr: lpm;
-            meta.route_sel: exact;
-        }
-        actions = {
-            ipv4_forward;
-            ipv4_nat_forward;
-            drop;
-            NoAction;
-        }
-        size = 1024;
-        default_action = drop();
-    }
-
     table ipv4_lpm {
         key = {
             hdr.ipv4.dstAddr: lpm;
@@ -1138,17 +1083,18 @@ control MyIngress(inout headers hdr,
         default_action = drop();
     }
 
-    /*table flow_control {
+    table ipv4_api {
         key = {
-            hdr.ipv4.dstAddr: lpm;
+            hdr.ipv4.srcAddr: lpm;
         }
         actions = {
-            flow_check;
+            ipv4_forward;
+            drop;
             NoAction;
         }
         size = 1024;
-        default_action = NoAction();
-    }*/
+        default_action = drop();
+    }
 
     apply {
         if (standard_metadata.ingress_port == CPU_PORT) {
@@ -1198,130 +1144,6 @@ control MyIngress(inout headers hdr,
                     hdr.packet_in.rm_flag = (bit<8>)1;
                 }
             }
-
-            /*
-            timeout_register.read(meta.timestamp, (bit<32>)1);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)2);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)3);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)4);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)5);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)6);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)7);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)8);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)9);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)10);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)11);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)12);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)13);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)14);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            timeout_register.read(meta.timestamp, (bit<32>)15);
-            if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp == (bit<48>)4000000){
-                    meta.flow_count = meta.flow_count - 1;
-                    timeout_register.write((bit<32>)0, 0);
-                    flows_register.write((bit<32>)0, 0);
-                }
-            }
-            
-            count_register.write((bit<32>)0, meta.flow_count);*/
 
             if (meta.flow_count >= max){
                 hdr.packet_in.code = (bit<16>) 600;
@@ -1377,47 +1199,29 @@ control MyIngress(inout headers hdr,
                 flows_register.write(meta.flows_index2, meta.value3);*/
 
             }
-
-            hash(meta.route_sel, HashAlgorithm.crc16, (bit<16>)0, {hdr.udp.dport, hdr.ipv4.dstAddr, hdr.ipv4.protocol, hdr.udp.sport, hdr.ipv4.srcAddr}, (bit<16>)2);
-
             //flow_control.apply();
-            if (ipv4_nat_answer.apply().miss){
-                if (ipv4_balance.apply().miss){
+            if (ipv4_api.apply().miss){
+                if (ipv4_nat_answer.apply().miss){
                     ipv4_lpm.apply();
                 }
             }
         }
     }
 }
-
 /*************************************************************************
 ****************  E G R E S S   P R O C E S S I N G   *******************
 *************************************************************************/
-
 control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
 
     apply {
 
-        /*if (standard_metadata.instance_type == 1) {
-            hdr.packet_in.setValid();
-            hdr.packet_in.ingress_port = (bit<16>) CPU_PORT;
-            hdr.packet_in.code = (bit<16>) 600;
-            meta.requested = 1;
-            hdr.packet_out.setInvalid();
-            hdr.tcp.setInvalid();
-            hdr.udp.setInvalid();
-            hdr.ipv4.setInvalid();
-            hdr.ethernet.setInvalid();
-        }*/
     }
 }
-
 /*************************************************************************
 *************   C H E C K S U M    C O M P U T A T I O N   **************
 *************************************************************************/
-
 control MyComputeChecksum(inout headers hdr, inout metadata meta) {
      apply {
         update_checksum(
@@ -1437,20 +1241,7 @@ control MyComputeChecksum(inout headers hdr, inout metadata meta) {
             HashAlgorithm.csum16);
 
         update_checksum_with_payload(
-        hdr.ipv4.dstAddr == 0x0a00020f,
-            { hdr.ipv4.srcAddr,
-              hdr.ipv4.dstAddr,
-              8w0,
-              hdr.ipv4.protocol,
-              meta.udp_length,
-              hdr.udp.sport,
-              hdr.udp.dport,
-              hdr.udp.len },
-            hdr.udp.checksum,
-            HashAlgorithm.csum16);
-
-        update_checksum_with_payload(
-        hdr.ipv4.srcAddr == 0x0a00020f,
+        hdr.ipv4.dstAddr == 0x0a00020f || hdr.ipv4.srcAddr == 0x0a00020f,
             { hdr.ipv4.srcAddr,
               hdr.ipv4.dstAddr,
               8w0,
@@ -1463,11 +1254,9 @@ control MyComputeChecksum(inout headers hdr, inout metadata meta) {
             HashAlgorithm.csum16);
      }
 }
-
 /*************************************************************************
 ***********************  D E P A R S E R  *******************************
 *************************************************************************/
-
 control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.packet_in);
@@ -1477,11 +1266,9 @@ control MyDeparser(packet_out packet, in headers hdr) {
         packet.emit(hdr.tcp);
     }
 }
-
 /*************************************************************************
 ***********************  S W I T C H  *******************************
 *************************************************************************/
-
 V1Switch(
 MyParser(),
 MyVerifyChecksum(),
