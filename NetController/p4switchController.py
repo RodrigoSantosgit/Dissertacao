@@ -4,23 +4,20 @@
 	- Dissertation Project
 	Network Controller - P4Switch Controller
 '''
-
 import argparse
 import os
 import sys
-from time import sleep
+import time
 from kafka import KafkaConsumer
 from kafka import KafkaProducer
 import subprocess
 import json
 import grpc
 from p4.v1 import p4runtime_pb2
-
 # Import P4Runtime lib from parent utils dir
 # Probably there's a better way of doing this.
 import p4runtime_sh.shell as sh
 import p4runtime_lib.helper
-
 global CPU_PORT
 global consumer
 global producer
@@ -33,59 +30,19 @@ global next
 
 next = 0
 flows = []
-
 CPU_PORT = '510'
-
 ask_del = 1
 ask_inst = 0
-
 port_FlowMapping = {}
-
 readCounterEnabled = 0
-
 consumer = KafkaConsumer("NetManagment", bootstrap_servers='10.0.2.15:9092')
-
 producer = KafkaProducer(bootstrap_servers='10.0.2.15:9092')
 
-#############################################################################################
-# 				INSERT IPV4 BALANCE ENTRIES					#
-#############################################################################################
-def insertipv4_balanceEntry(action_name, route_sel, macAddr, ipv4_dst, egress_port, newipaddr='', port=''):
-
-    te = sh.TableEntry("MyIngress.ipv4_balance")(action = action_name)
-    te.match["hdr.ipv4.dstAddr"] = ipv4_dst
-    te.match["meta.route_sel"] = route_sel
-    te.action["port"] = egress_port
-    te.action["dstAddr"] = macAddr
-    
-    if action_name == "MyIngress.ipv4_nat_forward":
-        te.action["newipaddr"] = newipaddr
-        te.action["dport"] = port
-
-    te.insert()
-    
-#############################################################################################
-# 				DELETE IPV4 BALANCE ENTRIES					#
-#############################################################################################
-def deleteipv4_balanceEntry(action_name, route_sel, macAddr, ipv4_dst, egress_port, newipaddr='', port=''):
-
-    te = sh.TableEntry("MyIngress.ipv4_balance")(action = action_name)
-    te.match["hdr.ipv4.dstAddr"] = ipv4_dst
-    te.match["meta.route_sel"] = route_sel
-    te.action["port"] = egress_port
-    te.action["dstAddr"] = macAddr
-    
-    if action_name == "MyIngress.ipv4_nat_forward":
-        te.action["newipaddr"] = newipaddr
-        te.action["dport"] = port
-
-    te.delete()
 
 #############################################################################################
 # 				INSERT IPV4 LPM ENTRIES					#
 #############################################################################################
 def insertipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr='', port=''):
-
     te = sh.TableEntry("MyIngress.ipv4_lpm")(action = action_name)
     te.match["hdr.ipv4.dstAddr"] = ipv4_dst
     te.action["port"] = egress_port
@@ -96,29 +53,27 @@ def insertipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr='', p
         te.action["dport"] = port
         te.modify()
         return
-
     te.insert()
+
 
 #############################################################################################
 # 				DELETE IPV4 LPM ENTRIES					#
 #############################################################################################
 def deleteipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr='', port=''):
-
     te = sh.TableEntry("MyIngress.ipv4_lpm")(action = action_name)
     te.match["hdr.ipv4.dstAddr"] = ipv4_dst
     te.action["port"] = egress_port
     te.action["dstAddr"] = macAddr
-
     if action_name == "MyIngress.ipv4_nat_forward":
         te.action["newipaddr"] = newipaddr
         te.action["dport"] = port
-
     te.delete()
-        
+
+
 #############################################################################################
-# 				INSERT IPV4 NATAnswer ENTRIES					#
+# 				INSERT IPV4 SubAnswer ENTRIES					#
 #############################################################################################
-def insertNatAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, port):
+def insertSubAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, port):
     te = sh.TableEntry("MyIngress.ipv4_nat_answer")(action = "MyIngress.ipv4_nat_answer_forward")
     te.match["hdr.ipv4.srcAddr"] = srcAddr
     te.match["hdr.ipv4.dstAddr"] = ipv4_dst
@@ -127,19 +82,20 @@ def insertNatAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, po
     te.action["dstMacAddr"] = destMacAddr
     te.action["sport"] = port
     te.insert()
+    
 
 #############################################################################################
 # 				INSTANTIATE FLOW COUNTER					#
 #############################################################################################
 def instantiateFlowCounter(service, max_rule, min_rule):
-
     global readCounterEnabled
     global port_FlowMapping
-    
+
     readCounterEnabled = 1
-    
+
     port_FlowMapping[service] = [max_rule, min_rule]
     
+
 #############################################################################################
 # 					Send PacketOut						#
 #############################################################################################
@@ -149,13 +105,13 @@ def sendPacketOut(service):
     global flows
     global next
     global port_FlowMapping
-    
+
     p = sh.PacketOut()
     p.payload = b'AAAA'
     p.metadata['egress_port'] = CPU_PORT
     p.metadata['max'] = port_FlowMapping[service][0]
     p.metadata['min'] = port_FlowMapping[service][1]
-    
+
     if len(flows) > 0:
         if next >= len(flows) - 1:
             next = 0
@@ -163,8 +119,8 @@ def sendPacketOut(service):
             next = next + 1
         
         p.metadata['flowid'] = str(flows[next])
-
     p.send()
+
 
 #############################################################################################
 # 					Send PacketIn						#
@@ -183,20 +139,22 @@ def parsePacketIn(msg):
         flows.remove(rm_flow)
         if next > len(flows):
             next = next - 1
+        #log(str(flows))
     
     if flowid not in flows:
         flows = flows + [flowid]
+        #log(str(flows))
     
     if value == None or value == 0:
         return 'None'
     else:
         return value
-            
+
+ 
 #############################################################################################
 # 					CHECK fLOW COUNTER					#
 #############################################################################################
 def checkFlowCounter(code):
-
     global port_FlowMapping
     global producer
     global ask_inst
@@ -206,6 +164,9 @@ def checkFlowCounter(code):
         log(' - Asking for k8s service instantiation - ')
         msg_out = '[COMPUTATIONCONTROLLER] [INSTANTIATE] [TRIGGERED] ' + list(port_FlowMapping.keys())[0]
         producer.send('ComputationManagment', msg_out.encode())
+        f = open("/tmp/Teste0.txt", "a")
+        f.write("kubernetes Inst Request Ts: " + str(time.time())+"\n")
+        f.close()
         ask_inst = 1
         ask_del = 0
         
@@ -213,22 +174,23 @@ def checkFlowCounter(code):
         log(' - Asking for k8s service removal - ')
         msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [TRIGGERED] ' + list(port_FlowMapping.keys())[0]
         producer.send('ComputationManagment', msg_out.encode())
+        f = open("/tmp/Teste0.txt", "a")
+        f.write("kubernetes Del Request Ts: " + str(time.time())+"\n")
+        f.close()
         ask_del = 1
         ask_inst = 0
-    
+
 
 ###############################################
 #		Check Action			#
 ###############################################
 def checkAction(msg):
-
     global producer
     
     processor, action = msg.split(' ')[0:2]
     
     if processor != '[NETCONTROLLER]':
         return None
-
     if action == '[INSERT]':
         log(" - creating service route -")
         name, table, action_name, ipaddr, egress_port, newipaddr, newmacaddr, port, srcaddr = msg.split(' ')[2:]
@@ -236,41 +198,52 @@ def checkAction(msg):
         if table == 'ipv4_lpm':
             log(" - inserting entry -")
             try:
-                insertipv4_balanceEntry(action_name, "1", newmacaddr, ipaddr, egress_port, newipaddr, port)
+                insertipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr, port)
+                f = open("/tmp/Teste0.txt", "a")
+                f.write("ROUTE TO KUBERNETES Ts: " + str(time.time())+"\n")
+                f.close()
             except:
-                msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [RIGHTAWAY] default' + name
+                msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [RIGHTAWAY] ' + name
                 producer.send('ComputationManagment', msg_out.encode())
         if table == 'ipv4_nat_answer':
             log(" - inserting entry -")
             try:
-                insertNatAnswerEntry(newipaddr, egress_port, newmacaddr, srcaddr, ipaddr, port)
+                insertSubAnswerEntry(newipaddr, egress_port, newmacaddr, srcaddr, ipaddr, port)
+                f = open("/tmp/Teste0.txt", "a")
+                f.write("ROUTE KUBERNETES ANSWER Ts: " + str(time.time())+"\n")
+                f.close()
             except:
-                msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [RIGHTAWAY] default' + name
+                msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [RIGHTAWAY] ' + name
                 producer.send('ComputationManagment', msg_out.encode())
-
     if action == '[DELETE]':
         log(" - deleting service route -")
         table, action_name, ipaddr, egress_port, newipaddr, newmacaddr, port = msg.split(' ')[2:]
         
         if table == 'ipv4_lpm':
             log(" - deleting entry -")
-            deleteipv4_balanceEntry("MyIngress.ipv4_nat_forward", "1", newmacaddr, ipaddr, egress_port, newipaddr, port)
+            deleteipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr, port)
+            if action_name == 'MyIngress.ipv4_nat_forward':
+                insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1e:00:1e", ipaddr, "1")
+                f = open("/tmp/Teste0.txt", "a")
+                f.write("ROUTE BACK TO SERVER Ts: " + str(time.time())+"\n")
+                f.close()
             
     if action == '[INSTANTIATE]':
         impl_object, service, rule_n1, rule_n2 = msg.split(' ')[2:]
         
         if impl_object == '[FLOWCOUNTER]':
-            log(" - using flow counter -")
+            log(" - creating flow counter -")
             instantiateFlowCounter(service, rule_n1, rule_n2)
+            f = open("/tmp/Teste0.txt", "a")
+            f.write("FLOW MANAGEMENT START Ts: " + str(time.time())+"\n")
+            f.close()
+            
 
 ############################################################################################
 def main(p4info_file_path, bmv2_file_path):
-
     global consumer
     global readCounterEnabled
-
-    sleep(5)
-
+    time.sleep(5)
     # Instantiate a P4Runtime helper from the p4info file
     sh.setup(
         device_id=1,
@@ -278,7 +251,11 @@ def main(p4info_file_path, bmv2_file_path):
         election_id=(0, 1), # (high, low)
         config=sh.FwdPipeConfig(p4info_file_path, bmv2_file_path)
     )
-
+    
+    f = open("/tmp/Teste0.txt", "w")
+    f.write("SYSTEM TEST TIMESTAMPS\n")
+    f.close()
+    
     te = sh.TableEntry("MyIngress.ipv4_api")(action = "MyIngress.ipv4_forward")
     te.match["hdr.ipv4.srcAddr"] = "10.33.0.50"
     te.action["port"] = "1"
@@ -286,7 +263,7 @@ def main(p4info_file_path, bmv2_file_path):
     te.insert()
 
     try:
-    
+
         insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1e:00:1e", "10.30.0.30", "1")
         insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1f:00:1e", "10.31.0.30", "2")
         insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:21:00:32", "10.33.0.50", "3")
@@ -294,20 +271,23 @@ def main(p4info_file_path, bmv2_file_path):
         insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1f:00:20", "10.31.0.32", "2")
         
         packet_in = sh.PacketIn()
-        
+
         while(True):
             if readCounterEnabled == 1:
                 for key in list(port_FlowMapping.keys()):
                     sendPacketOut(key)
-                    for msg in packet_in.sniff(timeout=0.20):
+                    for msg in packet_in.sniff(timeout=0.10):
                         code = parsePacketIn(msg)
                         checkFlowCounter(code)
 
-            msg = consumer.poll(200)
+            msg = consumer.poll(100)
             
             if msg:
                 for tp in msg:
                     for for_proc_msg in msg.get(tp):
+                        f = open("/tmp/Teste0.txt", "a")
+                        f.write("KAFKA MESSAGE Ts: " + str(time.time()) +"\n")
+                        f.close()
                         processed_msg = for_proc_msg.value.decode()
                         log(processed_msg)
                         checkAction(processed_msg)
@@ -318,17 +298,14 @@ def main(p4info_file_path, bmv2_file_path):
         print(" Shutting down.")
     except grpc.RpcError as e:
         printGrpcError(e)
-
     sh.teardown()
     
 ###############################################
 #			LOG			#
 ###############################################
 def log(msg):
-
     # Building the command.
     command = ['echo', msg]
-
     subprocess.call(command)
     
 ###############################################
@@ -341,7 +318,6 @@ if __name__ == '__main__':
                         type=str, action="store", required=False,
                         default='/usr/src/app/fabric.json')
     args = parser.parse_args()
-
     if not os.path.exists(args.p4info):
         parser.print_help()
         print("\np4info file not found: %s\nHave you run 'make'?" % args.p4info)
