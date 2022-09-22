@@ -279,6 +279,12 @@ def main(p4info_file_path, bmv2_file_path):
         config=sh.FwdPipeConfig(p4info_file_path, bmv2_file_path)
     )
 
+    te = sh.TableEntry("MyIngress.ipv4_api")(action = "MyIngress.ipv4_forward")
+    te.match["hdr.ipv4.srcAddr"] = "10.33.0.50"
+    te.action["port"] = "1"
+    te.action["dstAddr"] = "02:42:0a:1e:00:1e"
+    te.insert()
+
     try:
     
         insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1e:00:1e", "10.30.0.30", "1")
