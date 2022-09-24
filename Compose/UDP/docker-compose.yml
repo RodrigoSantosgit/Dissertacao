@@ -9,9 +9,9 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - ./tmp:/tmp
-      - /home/rodrigo/bmv2_config/exp/basic.json:/behavioral-model/basic.json
-      - /home/rodrigo/bmv2_config/exp/p4info.txt:/behavioral-model/p4info.txt
+      - ./tmp/bmv2:/tmp
+      - /home/rodrigo/bmv2_config/basic.json:/behavioral-model/basic.json
+      - /home/rodrigo/bmv2_config/p4info.txt:/behavioral-model/p4info.txt
     networks:
       net_internal:
         ipv4_address: 10.31.0.5
@@ -23,12 +23,14 @@ services:
         ipv4_address: 10.33.0.5
       net_edge:
         ipv4_address: 10.35.0.5
-    command: bash -c "ping 10.0.2.15 -c 1 -I eth1 && ip a del 10.35.0.5 dev eth1 && ip a del 10.31.0.5 dev eth4 && ip a del 10.30.0.5 dev eth3 && ip a del 10.33.0.5 dev eth2 && simple_switch_grpc -i 1@eth3 -i 2@eth4 -i 3@eth2 -i 4@eth1 /behavioral-model/basic.json --device-id 1 --debugger --log-level debug --log-file logs -- --cpu-port 510"
+    command: bash -c "ip a del 10.35.0.5 dev eth1 && ip a del 10.31.0.5 dev eth4 && ip a del 10.30.0.5 dev eth3 && ip a del 10.33.0.5 dev eth2 && simple_switch_grpc -i 1@eth3 -i 2@eth4 -i 3@eth2 -i 4@eth1 /behavioral-model/basic.json --device-id 1 --debugger --log-level debug --log-file logs -- --cpu-port 255"
 
   exposureManagmentFunction:
     image: expmngmtfn:v1
     hostname: expmngmtfn
     container_name: expmngmtfn
+    volumes:
+      - ./tmp/expmngfnc:/tmp
     privileged : true
     tty: true
     stdin_open: true
@@ -51,8 +53,9 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - /home/rodrigo/bmv2_config/exp/p4info.txt:/usr/src/app/p4info.txt
-      - /home/rodrigo/bmv2_config/exp/basic.json:/usr/src/app/basic.json
+      - ./tmp/netcontroller:/tmp
+      - /home/rodrigo/bmv2_config/p4info.txt:/usr/src/app/p4info.txt
+      - /home/rodrigo/bmv2_config/basic.json:/usr/src/app/basic.json
     command: bash -c "python3 p4switchController.py --p4info /usr/src/app/p4info.txt --bmv2-json /usr/src/app/basic.json"
     networks:
       net_control:
@@ -67,6 +70,8 @@ services:
     image: computationcontroller:v1
     hostname: computationController
     container_name: computationController
+    volumes:
+      - ./tmp/computationcontroller:/tmp
     privileged : true
     tty: true
     stdin_open: true
