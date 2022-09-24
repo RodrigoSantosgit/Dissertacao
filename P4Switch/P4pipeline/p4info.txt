@@ -79,6 +79,26 @@ tables {
   }
   size: 1024
 }
+tables {
+  preamble {
+    id: 50003310
+    name: "MyIngress.flow_detection"
+    alias: "flow_detection"
+  }
+  match_fields {
+    id: 1
+    name: "meta.inc_flowid"
+    bitwidth: 16
+    match_type: EXACT
+  }
+  action_refs {
+    id: 30714265
+  }
+  action_refs {
+    id: 21257015
+  }
+  size: 1024
+}
 actions {
   preamble {
     id: 21257015
@@ -92,6 +112,30 @@ actions {
     id: 25652968
     name: "MyIngress.drop"
     alias: "drop"
+  }
+}
+actions {
+  preamble {
+    id: 30714265
+    name: "MyIngress.update_flow"
+    alias: "update_flow"
+  }
+  params {
+    id: 1
+    name: "min"
+    bitwidth: 16
+  }
+  params {
+    id: 2
+    name: "max"
+    bitwidth: 16
+  }
+}
+actions {
+  preamble {
+    id: 23719224
+    name: "MyIngress.clone_packet"
+    alias: "clone_packet"
   }
 }
 actions {
@@ -184,11 +228,6 @@ controller_packet_metadata {
   }
   metadata {
     id: 3
-    name: "max"
-    bitwidth: 16
-  }
-  metadata {
-    id: 4
     name: "min"
     bitwidth: 16
   }
@@ -296,36 +335,6 @@ registers {
     bitstring {
       bit {
         bitwidth: 1
-      }
-    }
-  }
-  size: 1
-}
-registers {
-  preamble {
-    id: 383273296
-    name: "MyIngress.maxflows_register"
-    alias: "maxflows_register"
-  }
-  type_spec {
-    bitstring {
-      bit {
-        bitwidth: 16
-      }
-    }
-  }
-  size: 1
-}
-registers {
-  preamble {
-    id: 376946454
-    name: "MyIngress.minflows_register"
-    alias: "minflows_register"
-  }
-  type_spec {
-    bitstring {
-      bit {
-        bitwidth: 16
       }
     }
   }
