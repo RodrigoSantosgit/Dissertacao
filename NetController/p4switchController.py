@@ -30,7 +30,7 @@ global next
 
 next = 0
 flows = []
-CPU_PORT = '510'
+CPU_PORT = '255'
 ask_del = 1
 ask_inst = 0
 port_FlowMapping = {}
@@ -71,9 +71,9 @@ def deleteipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr='', p
 
 
 #############################################################################################
-# 				INSERT IPV4 SubAnswer ENTRIES					#
+# 				INSERT IPV4 NATAnswer ENTRIES					#
 #############################################################################################
-def insertSubAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, port):
+def insertNatAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, port):
     te = sh.TableEntry("MyIngress.ipv4_nat_answer")(action = "MyIngress.ipv4_nat_answer_forward")
     te.match["hdr.ipv4.srcAddr"] = srcAddr
     te.match["hdr.ipv4.dstAddr"] = ipv4_dst
@@ -95,6 +95,12 @@ def instantiateFlowCounter(service, max_rule, min_rule):
 
     port_FlowMapping[service] = [max_rule, min_rule]
     
+    te = sh.TableEntry("MyIngress.flow_detection")(action = "MyIngress.update_flow")
+    te.match["meta.inc_flowid"] = '11'
+    te.action["min"] = min_rule
+    te.action["max"] = max_rule
+    te.insert()
+    
 
 #############################################################################################
 # 					Send PacketOut						#
@@ -107,9 +113,8 @@ def sendPacketOut(service):
     global port_FlowMapping
 
     p = sh.PacketOut()
-    p.payload = b'AAAA'
+    p.payload = b'monitor packet'
     p.metadata['egress_port'] = CPU_PORT
-    p.metadata['max'] = port_FlowMapping[service][0]
     p.metadata['min'] = port_FlowMapping[service][1]
 
     if len(flows) > 0:
@@ -208,7 +213,7 @@ def checkAction(msg):
         if table == 'ipv4_nat_answer':
             log(" - inserting entry -")
             try:
-                insertSubAnswerEntry(newipaddr, egress_port, newmacaddr, srcaddr, ipaddr, port)
+                insertNatAnswerEntry(newipaddr, egress_port, newmacaddr, srcaddr, ipaddr, port)
                 f = open("/tmp/Teste0.txt", "a")
                 f.write("ROUTE KUBERNETES ANSWER Ts: " + str(time.time())+"\n")
                 f.close()
@@ -256,6 +261,10 @@ def main(p4info_file_path, bmv2_file_path):
     f.write("SYSTEM TEST TIMESTAMPS\n")
     f.close()
     
+    cse = sh.CloneSessionEntry(500)
+    cse.add(255, 1)
+    cse.insert()
+    
     te = sh.TableEntry("MyIngress.ipv4_api")(action = "MyIngress.ipv4_forward")
     te.match["hdr.ipv4.srcAddr"] = "10.33.0.50"
     te.action["port"] = "1"
@@ -276,11 +285,11 @@ def main(p4info_file_path, bmv2_file_path):
             if readCounterEnabled == 1:
                 for key in list(port_FlowMapping.keys()):
                     sendPacketOut(key)
-                    for msg in packet_in.sniff(timeout=0.10):
+                    for msg in packet_in.sniff(timeout=0.20):
                         code = parsePacketIn(msg)
                         checkFlowCounter(code)
 
-            msg = consumer.poll(100)
+            msg = consumer.poll(200)
             
             if msg:
                 for tp in msg:
