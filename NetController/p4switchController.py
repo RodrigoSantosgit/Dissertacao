@@ -18,6 +18,10 @@ from p4.v1 import p4runtime_pb2
 # Probably there's a better way of doing this.
 import p4runtime_sh.shell as sh
 import p4runtime_lib.helper
+
+global port1_flux
+global timestamps
+global port4_flux
 global CPU_PORT
 global consumer
 global producer
@@ -28,6 +32,9 @@ global ask_del
 global flows
 global next
 
+port1_flux = []
+timestamps = []
+port4_flux = []
 next = 0
 flows = []
 CPU_PORT = '255'
@@ -75,7 +82,7 @@ def deleteipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr='', p
 #############################################################################################
 def insertNatAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, port):
     te = sh.TableEntry("MyIngress.ipv4_nat_answer")(action = "MyIngress.ipv4_nat_answer_forward")
-    te.match["hdr.ipv4.srcAddr"] = srcAddr
+    te.match["standard_metadata.ingress_port"] = '4'
     te.match["hdr.ipv4.dstAddr"] = ipv4_dst
     te.action["originaldestIpAddr"] = ipaddr
     te.action["port"] = egress_port
@@ -155,7 +162,33 @@ def parsePacketIn(msg):
     else:
         return value
 
- 
+
+#############################################################################################
+# 					PRINT COUNTER INFO					#
+#############################################################################################
+def printCounter(counter):
+
+    global port1_flux
+    global timestamps 
+    global port4_flux 
+
+    counts = sh.CounterEntry(counter).read()
+
+    for item in counts:
+        if item.index == 1: 
+            num_packets = item.data.packet_count
+            port1_flux = port1_flux + [num_packets]
+        if item.index == 4:
+            num_packets = item.data.packet_count
+            port4_flux = port4_flux + [num_packets]
+            
+    timestamps = timestamps + [time.time()]
+        
+    '''if timestamps[-1] - timestamps[0] > 40:
+        log(str(port1_flux))
+        log(str(timestamps))
+        log(str(port4_flux))'''
+
 #############################################################################################
 # 					CHECK fLOW COUNTER					#
 #############################################################################################
@@ -213,7 +246,7 @@ def checkAction(msg):
         if table == 'ipv4_nat_answer':
             log(" - inserting entry -")
             try:
-                insertNatAnswerEntry(newipaddr, egress_port, newmacaddr, srcaddr, ipaddr, port)
+                insertNatAnswerEntry(newipaddr, egress_port, newmacaddr, ipaddr, srcaddr, port)
                 f = open("/tmp/Teste0.txt", "a")
                 f.write("ROUTE KUBERNETES ANSWER Ts: " + str(time.time())+"\n")
                 f.close()
@@ -282,14 +315,18 @@ def main(p4info_file_path, bmv2_file_path):
         packet_in = sh.PacketIn()
 
         while(True):
+        
+            #printCounter("MyIngress.flux_counter")
+            
             if readCounterEnabled == 1:
+            
                 for key in list(port_FlowMapping.keys()):
                     sendPacketOut(key)
-                    for msg in packet_in.sniff(timeout=0.20):
+                    for msg in packet_in.sniff(timeout=0.020):
                         code = parsePacketIn(msg)
                         checkFlowCounter(code)
 
-            msg = consumer.poll(200)
+            msg = consumer.poll(20)
             
             if msg:
                 for tp in msg:
