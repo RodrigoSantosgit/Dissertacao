@@ -10,6 +10,7 @@ from kubernetes.client import api_client
 from kafka import KafkaConsumer
 from kafka import KafkaProducer
 
+import time
 import kubernetes.client
 import datetime
 import pytz
@@ -60,8 +61,15 @@ def main():
 
     global consumer
     
+    f = open("/tmp/Teste0.txt", "w")
+    f.write("SYSTEM TEST TIMESTAMPS \n")
+    f.close()
+    
     while(True):
         for msg in consumer:
+            f = open("/tmp/Teste0.txt", "a")
+            f.write("Kafka Msg Ts: " + str(time.time())+"\n")
+            f.close()
             processed_msg = msg.value.decode()
             log(processed_msg)
             checkAction(processed_msg)
@@ -93,7 +101,11 @@ def checkAction(msg):
             # Create service
             log(" - creating service -")
             res_ser = create_service(name= name+"-service", selector=app, protocol="UDP", port = 5000, targetPort = 5000)
-        
+            
+            f = open("/tmp/Teste0.txt", "a")
+            f.write("Service Created Ts: " + str(time.time())+"\n")
+            f.close()
+            
             if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
                 msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000 '
                 producer.send('NetManagment', msg_out.encode())
@@ -124,6 +136,10 @@ def checkAction(msg):
             log(" - creating service -")
             res_ser = create_service(name= name+"-service", selector=app, protocol="UDP", port = 5000, targetPort = 5000)
         
+            f = open("/tmp/Teste0.txt", "a")
+            f.write("Service Created Ts: " + str(time.time())+"\n")
+            f.close()
+            
             if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
                 msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000 '
                 producer.send('NetManagment', msg_out.encode())
@@ -150,6 +166,10 @@ def checkAction(msg):
             # Delete service
             log(" - deleting service -")
             res_ser = delete_service(name="server-udp-service")
+            
+            f = open("/tmp/Teste0.txt", "a")
+            f.write("Service Del Ts: " + str(time.time())+"\n")
+            f.close()
         
             if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
                 msg_out = '[NETCONTROLLER] [DELETE] ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000'
@@ -174,6 +194,10 @@ def checkAction(msg):
                 # Delete service
                 log(" - deleting service -")
                 res_ser = delete_service(name="server-udp-service")
+                
+                f = open("/tmp/Teste0.txt", "a")
+                f.write("Service Del Ts: " + str(time.time())+"\n")
+                f.close()
             
                 if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
                     msg_out = '[NETCONTROLLER] [DELETE] ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000'
@@ -244,7 +268,13 @@ def create_deployment(namespace="default", name="None", app="None", container_na
         deployment = ''
         print('\n[ERROR] Something went wrong!\n')
         return {"ERROR"}    
-
+    
+    v1 = kubernetes.client.AppsV1Api()
+    
+    dep = v1.read_namespaced_deployment(name=name, namespace='default')
+    while dep.status.ready_replicas != 1:
+        dep = v1.read_namespaced_deployment(name=name, namespace='default')
+    
     print("\n[INFO] deployment `"+ name +"` created\n")
     return {"SUCCESS"}
 
