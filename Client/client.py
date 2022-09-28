@@ -14,6 +14,10 @@ import subprocess
 
 def main():
 
+	f = open("/tmp/Teste0.txt", "w")
+	f.write("SYSTEM TEST TIMESTAMPS\n")
+	f.close()
+
 	time.sleep(13)
 
 	remoteClientAddr = "10.30.0.30" # default value
@@ -53,6 +57,9 @@ def main():
 	time.sleep(2)
 	log(" - UDP COMMS - \n")
 	s.sendto(b"HELLO SERVER!", (remoteClientAddr, remport))
+	f = open("/tmp/Teste0.txt", "a")
+	f.write("FIRST PACKET Ts: " + str(time.time())+"\n")
+	f.close()
 	log("HELLO SERVER!")
 	
 	while True:
@@ -65,13 +72,16 @@ def main():
 	    if msg.decode() == "Bye Client":
 	    	break
 
-	    if i == 9:
-	    	time.sleep(2)
+	    if i == 18:
+	    	time.sleep(1)
 	    	send_msg = "Bye Server"
 	    	s.sendto(send_msg.encode(), (remoteClientAddr, remport))
+	    	f = open("/tmp/Teste0.txt", "a")
+	    	f.write("LAST PACKET Ts: " + str(time.time())+"\n")
+	    	f.close()
 	    	log(send_msg)
 	    else:
-	       time.sleep(2)
+	       time.sleep(1)
 	       send_msg = "MSG Number = " + str(i)
 	       s.sendto(send_msg.encode(), (remoteClientAddr, remport))
 	       log(send_msg)
