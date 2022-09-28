@@ -9,8 +9,8 @@ tables {
   }
   match_fields {
     id: 1
-    name: "hdr.ipv4.srcAddr"
-    bitwidth: 32
+    name: "standard_metadata.ingress_port"
+    bitwidth: 9
     match_type: EXACT
   }
   match_fields {
@@ -208,6 +208,17 @@ actions {
     name: "sport"
     bitwidth: 16
   }
+}
+counters {
+  preamble {
+    id: 303425801
+    name: "MyIngress.flux_counter"
+    alias: "flux_counter"
+  }
+  spec {
+    unit: BOTH
+  }
+  size: 16
 }
 controller_packet_metadata {
   preamble {

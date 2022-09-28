@@ -164,7 +164,9 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 control MyIngress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
-                  
+    
+    counter(16, CounterType.packets_and_bytes) flux_counter;
+    
     register<bit<REGISTER_CELL_BIT_WIDTH>>(REGISTER_LENGTH) flows_register;
     register<bit<48>>(REGISTER_LENGTH) timeout_register;
     register<bit<REGISTER_CELL_BIT_WIDTH>>(1) count_register;
@@ -219,7 +221,7 @@ control MyIngress(inout headers hdr,
     }
     table ipv4_nat_answer {
         key = {
-            hdr.ipv4.srcAddr: exact;
+            standard_metadata.ingress_port: exact;
             hdr.ipv4.dstAddr: lpm;
         }
         actions = {
@@ -302,7 +304,7 @@ control MyIngress(inout headers hdr,
             
             timeout_register.read(meta.timestamp, (bit<32>)id);
             if (meta.timestamp != (bit<48>)0){
-                if (standard_metadata.ingress_global_timestamp - meta.timestamp >= (bit<48>)4000000){
+                if (standard_metadata.ingress_global_timestamp - meta.timestamp >= (bit<48>)3000000){
                     meta.flow_count = meta.flow_count - 1;
                     timeout_register.write((bit<32>)id, (bit<48>)0);
                     flows_register.write((bit<32>)id, (bit<16>)0);
@@ -318,6 +320,8 @@ control MyIngress(inout headers hdr,
 
         } 
         else if (hdr.ipv4.isValid()) {
+        
+            flux_counter.count((bit<32>) standard_metadata.ingress_port);
             
             hash(meta.inc_flowid, HashAlgorithm.crc16, (bit<16>)0, {hdr.udp.dport, hdr.ipv4.dstAddr, hdr.ipv4.protocol}, (bit<16>)REGISTER_LENGTH);
             
@@ -425,7 +429,7 @@ control MyComputeChecksum(inout headers  hdr, inout metadata meta) {
             HashAlgorithm.csum16);
          
         update_checksum_with_payload(
-        hdr.ipv4.dstAddr == 0x0a00020f || hdr.ipv4.srcAddr == 0x0a00020f,
+        hdr.ipv4.dstAddr == 0x0a00020f || hdr.ipv4.srcAddr == 0x0a1e001e,
             { hdr.ipv4.srcAddr,
               hdr.ipv4.dstAddr,
               8w0,
