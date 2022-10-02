@@ -90,21 +90,34 @@ def insertNatAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, po
     te.action["sport"] = port
     te.insert()
     
+#############################################################################################
+# 				DELETE IPV4 NATAnswer ENTRIES					#
+#############################################################################################
+def deleteNatAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, port):
+    te = sh.TableEntry("MyIngress.ipv4_nat_answer")(action = "MyIngress.ipv4_nat_answer_forward")
+    te.match["standard_metadata.ingress_port"] = '4'
+    te.match["hdr.ipv4.dstAddr"] = ipv4_dst
+    te.action["originaldestIpAddr"] = ipaddr
+    te.action["port"] = egress_port
+    te.action["dstMacAddr"] = destMacAddr
+    te.action["sport"] = port
+    te.delete()
 
 #############################################################################################
 # 				INSTANTIATE FLOW COUNTER					#
 #############################################################################################
-def instantiateFlowCounter(service, max_rule, min_rule):
+def instantiateFlowCounter(service, max_rule, ipaddr, protoc, port):
     global readCounterEnabled
     global port_FlowMapping
 
     readCounterEnabled = 1
 
-    port_FlowMapping[service] = [max_rule, min_rule]
+    port_FlowMapping[service] = [max_rule, ipaddr, protoc, port]
     
     te = sh.TableEntry("MyIngress.flow_detection")(action = "MyIngress.update_flow")
-    te.match["meta.inc_flowid"] = '11'
-    te.action["min"] = min_rule
+    te.match["hdr.udp.dport"] = port
+    te.match["hdr.ipv4.dstAddr"] = ipaddr
+    te.match["hdr.ipv4.protocol"] = protoc
     te.action["max"] = max_rule
     te.insert()
     
@@ -122,15 +135,6 @@ def sendPacketOut(service):
     p = sh.PacketOut()
     p.payload = b'monitor packet'
     p.metadata['egress_port'] = CPU_PORT
-    p.metadata['min'] = port_FlowMapping[service][1]
-
-    if len(flows) > 0:
-        if next >= len(flows) - 1:
-            next = 0
-        else:
-            next = next + 1
-        
-        p.metadata['flowid'] = str(flows[next])
     p.send()
 
 
@@ -142,25 +146,12 @@ def parsePacketIn(msg):
     global flows
     global next
     
-    value = int(msg.packet.metadata[1].value.hex(), base=16)
-    flowid = int(msg.packet.metadata[2].value.hex(), base=16)
-    rm_flow = int(msg.packet.metadata[3].value.hex(), base=16)
-    rm_flag = int(msg.packet.metadata[4].value.hex(), base=16)
-    
-    if rm_flag == 1:
-        flows.remove(rm_flow)
-        if next > len(flows):
-            next = next - 1
-        #log(str(flows))
-    
-    if flowid not in flows:
-        flows = flows + [flowid]
-        #log(str(flows))
-    
-    if value == None or value == 0:
+    code = int(msg.packet.metadata[1].value.hex(), base=16)
+
+    if code == None or code == 0:
         return 'None'
     else:
-        return value
+        return code
 
 
 #############################################################################################
@@ -207,16 +198,6 @@ def checkFlowCounter(code):
         f.close()
         ask_inst = 1
         ask_del = 0
-        
-    if code == 900 and ask_del != 1:
-        log(' - Asking for k8s service removal - ')
-        msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [TRIGGERED] ' + list(port_FlowMapping.keys())[0]
-        producer.send('ComputationManagment', msg_out.encode())
-        f = open("/tmp/Teste0.txt", "a")
-        f.write("kubernetes Del Request Ts: " + str(time.time())+"\n")
-        f.close()
-        ask_del = 1
-        ask_inst = 0
 
 
 ###############################################
@@ -255,7 +236,11 @@ def checkAction(msg):
                 producer.send('ComputationManagment', msg_out.encode())
     if action == '[DELETE]':
         log(" - deleting service route -")
-        table, action_name, ipaddr, egress_port, newipaddr, newmacaddr, port = msg.split(' ')[2:]
+        name, table, action_name, ipaddr, egress_port, newipaddr, newmacaddr, port, srcaddr = msg.split(' ')[2:]
+        
+        if table == 'ipv4_nat_answer':
+            log(" - deleting entry -")
+            deleteNatAnswerEntry(newipaddr, egress_port, newmacaddr, ipaddr, srcaddr, port)
         
         if table == 'ipv4_lpm':
             log(" - deleting entry -")
@@ -267,11 +252,11 @@ def checkAction(msg):
                 f.close()
             
     if action == '[INSTANTIATE]':
-        impl_object, service, rule_n1, rule_n2 = msg.split(' ')[2:]
+        impl_object, service, rule_n1, ipaddr, protoc, port = msg.split(' ')[2:]
         
         if impl_object == '[FLOWCOUNTER]':
             log(" - creating flow counter -")
-            instantiateFlowCounter(service, rule_n1, rule_n2)
+            instantiateFlowCounter(service, rule_n1, ipaddr, protoc, port)
             f = open("/tmp/Teste0.txt", "a")
             f.write("FLOW MANAGEMENT START Ts: " + str(time.time())+"\n")
             f.close()
@@ -279,9 +264,11 @@ def checkAction(msg):
 
 ############################################################################################
 def main(p4info_file_path, bmv2_file_path):
+    
     global consumer
     global readCounterEnabled
-    time.sleep(5)
+
+    
     # Instantiate a P4Runtime helper from the p4info file
     sh.setup(
         device_id=1,
@@ -294,17 +281,16 @@ def main(p4info_file_path, bmv2_file_path):
     f.write("SYSTEM TEST TIMESTAMPS\n")
     f.close()
     
-    cse = sh.CloneSessionEntry(500)
-    cse.add(255, 1)
-    cse.insert()
-    
-    te = sh.TableEntry("MyIngress.ipv4_api")(action = "MyIngress.ipv4_forward")
-    te.match["hdr.ipv4.srcAddr"] = "10.33.0.50"
-    te.action["port"] = "1"
-    te.action["dstAddr"] = "02:42:0a:1e:00:1e"
-    te.insert()
-
     try:
+        cse = sh.CloneSessionEntry(500)
+        cse.add(255, 1)
+        cse.insert()
+    
+        te = sh.TableEntry("MyIngress.ipv4_api")(action = "MyIngress.ipv4_forward")
+        te.match["hdr.ipv4.srcAddr"] = "10.33.0.50"
+        te.action["port"] = "1"
+        te.action["dstAddr"] = "02:42:0a:1e:00:1e"
+        te.insert()
 
         insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1e:00:1e", "10.30.0.30", "1")
         insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1f:00:1e", "10.31.0.30", "2")
@@ -315,18 +301,14 @@ def main(p4info_file_path, bmv2_file_path):
         packet_in = sh.PacketIn()
 
         while(True):
-        
-            #printCounter("MyIngress.flux_counter")
             
             if readCounterEnabled == 1:
             
-                for key in list(port_FlowMapping.keys()):
-                    sendPacketOut(key)
-                    for msg in packet_in.sniff(timeout=0.020):
-                        code = parsePacketIn(msg)
-                        checkFlowCounter(code)
+                for msg in packet_in.sniff(timeout=0.050):
+                    code = parsePacketIn(msg)
+                    checkFlowCounter(code)
 
-            msg = consumer.poll(20)
+            msg = consumer.poll()
             
             if msg:
                 for tp in msg:
@@ -344,6 +326,7 @@ def main(p4info_file_path, bmv2_file_path):
         print(" Shutting down.")
     except grpc.RpcError as e:
         printGrpcError(e)
+
     sh.teardown()
     
 ###############################################
@@ -356,6 +339,7 @@ def log(msg):
     
 ###############################################
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description='P4Runtime Controller')
     parser.add_argument('--p4info', help='p4info proto in text format from p4c',
                         type=str, action="store", required=False,
@@ -364,6 +348,7 @@ if __name__ == '__main__':
                         type=str, action="store", required=False,
                         default='/usr/src/app/fabric.json')
     args = parser.parse_args()
+    
     if not os.path.exists(args.p4info):
         parser.print_help()
         print("\np4info file not found: %s\nHave you run 'make'?" % args.p4info)
@@ -372,5 +357,6 @@ if __name__ == '__main__':
         parser.print_help()
         print("\nBMv2 JSON file not found: %s\nHave you run 'make'?" % args.bmv2_json)
         parser.exit(1)
+        
     main(args.p4info, args.bmv2_json)
 
