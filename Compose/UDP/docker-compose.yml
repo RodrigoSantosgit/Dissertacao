@@ -10,8 +10,8 @@ services:
     stdin_open: true
     volumes:
       - ./tmp/bmv2:/tmp
-      - /home/rodrigo/bmv2_config/basic.json:/behavioral-model/basic.json
-      - /home/rodrigo/bmv2_config/p4info.txt:/behavioral-model/p4info.txt
+      - ./bmv2_config/basic.json:/behavioral-model/basic.json
+      - ./bmv2_config/p4info.txt:/behavioral-model/p4info.txt
     networks:
       net_internal:
         ipv4_address: 10.31.0.5
@@ -54,8 +54,8 @@ services:
     stdin_open: true
     volumes:
       - ./tmp/netcontroller:/tmp
-      - /home/rodrigo/bmv2_config/p4info.txt:/usr/src/app/p4info.txt
-      - /home/rodrigo/bmv2_config/basic.json:/usr/src/app/basic.json
+      - ./bmv2_config/p4info.txt:/usr/src/app/p4info.txt
+      - ./bmv2_config/basic.json:/usr/src/app/basic.json
     command: bash -c "python3 p4switchController.py --p4info /usr/src/app/p4info.txt --bmv2-json /usr/src/app/basic.json"
     networks:
       net_control:
@@ -102,12 +102,11 @@ services:
       - name=server-udp
       - image=kube-server-udp%3Av1
       - maxflows=3
-      - minflows=2
       - emf=10.33.0.50
     networks:
       net_external:
         ipv4_address: 10.30.0.30
-    command: bash -c "ip r del default via 10.30.0.1 dev eth0 && ip r add default via 10.30.0.5 dev eth0 && arp -s 10.30.0.5 02:42:0a:1e:00:05 && ethtool --offload  eth0  rx off  tx off  && python3 server.py -h $${host} -p $${port} -m $${mode} -emf $${emf} -n $${name} -i $${image} --maxflows $${maxflows} --minflows $${minflows}"
+    command: bash -c "ip r del default via 10.30.0.1 dev eth0 && ip r add default via 10.30.0.5 dev eth0 && arp -s 10.30.0.5 02:42:0a:1e:00:05 && ethtool --offload  eth0  rx off  tx off  && python3 server.py -h $${host} -p $${port} -m $${mode} -emf $${emf} -n $${name} -i $${image} --maxflows $${maxflows}"
     depends_on:
       - bmv2
       - exposureManagmentFunction
