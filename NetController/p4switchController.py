@@ -106,20 +106,27 @@ def deleteNatAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, po
 #############################################################################################
 # 				INSTANTIATE FLOW COUNTER					#
 #############################################################################################
-def instantiateFlowCounter(service, max_rule, ipaddr, protoc, port):
+def flowCounter(mode, service, max_rule, ipaddr, protoc, port):
     global readCounterEnabled
     global port_FlowMapping
 
     readCounterEnabled = 1
-
-    port_FlowMapping[service] = [max_rule, ipaddr, protoc, port]
+    
+    if mode == "insert":
+        port_FlowMapping[service] = [max_rule, ipaddr, protoc, port]
+    if mode == "delete":
+        port_FlowMapping.pop(service)
     
     te = sh.TableEntry("MyIngress.flow_detection")(action = "MyIngress.update_flow")
     te.match["hdr.udp.dport"] = port
     te.match["hdr.ipv4.dstAddr"] = ipaddr
     te.match["hdr.ipv4.protocol"] = protoc
     te.action["max"] = max_rule
-    te.insert()
+    
+    if mode == "insert":
+        te.insert()
+    if mode == "delete":
+        te.delete
     
 
 #############################################################################################
@@ -205,11 +212,13 @@ def checkFlowCounter(code):
 ###############################################
 def checkAction(msg):
     global producer
+    global port_FlowMapping
     
     processor, action = msg.split(' ')[0:2]
     
     if processor != '[NETCONTROLLER]':
         return None
+
     if action == '[INSERT]':
         log(" - creating service route -")
         name, table, action_name, ipaddr, egress_port, newipaddr, newmacaddr, port, srcaddr = msg.split(' ')[2:]
@@ -234,29 +243,43 @@ def checkAction(msg):
             except:
                 msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [RIGHTAWAY] ' + name
                 producer.send('ComputationManagment', msg_out.encode())
+
     if action == '[DELETE]':
         log(" - deleting service route -")
-        name, table, action_name, ipaddr, egress_port, newipaddr, newmacaddr, port, srcaddr = msg.split(' ')[2:]
         
-        if table == 'ipv4_nat_answer':
-            log(" - deleting entry -")
-            deleteNatAnswerEntry(newipaddr, egress_port, newmacaddr, ipaddr, srcaddr, port)
+        impl_object = msg.split(' ')[2]
+        if impl_object == '[FLOWCOUNTER]':
+            service, rule_n1, ipaddr, protoc, port = msg.split(' ')[3:]
+            log(" - deleting flow counter -")
+            flowCounter("delete", service, rule_n1, ipaddr, protoc, port)
+            f = open("/tmp/Teste0.txt", "a")
+            f.write("FLOW MANAGEMENT END Ts: " + str(time.time())+"\n")
+            f.close()
+            msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [TRIGGERED] ' + service
+            producer.send('ComputationManagment', msg_out.encode())
         
-        if table == 'ipv4_lpm':
-            log(" - deleting entry -")
-            deleteipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr, port)
-            if action_name == 'MyIngress.ipv4_nat_forward':
-                insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1e:00:1e", ipaddr, "1")
-                f = open("/tmp/Teste0.txt", "a")
-                f.write("ROUTE BACK TO SERVER Ts: " + str(time.time())+"\n")
-                f.close()
+        else:
+            name, table, action_name, ipaddr, egress_port, newipaddr, newmacaddr, port, srcaddr = msg.split(' ')[2:]
+        
+            if table == 'ipv4_nat_answer':
+                log(" - deleting entry -")
+                deleteNatAnswerEntry(newipaddr, egress_port, newmacaddr, ipaddr, srcaddr, port)
+        
+            if table == 'ipv4_lpm':
+                log(" - deleting entry -")
+                deleteipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr, port)
+                if action_name == 'MyIngress.ipv4_nat_forward':
+                    insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1e:00:1e", ipaddr, "1")
+                    f = open("/tmp/Teste0.txt", "a")
+                    f.write("ROUTE BACK TO SERVER Ts: " + str(time.time())+"\n")
+                    f.close()
             
     if action == '[INSTANTIATE]':
         impl_object, service, rule_n1, ipaddr, protoc, port = msg.split(' ')[2:]
         
         if impl_object == '[FLOWCOUNTER]':
             log(" - creating flow counter -")
-            instantiateFlowCounter(service, rule_n1, ipaddr, protoc, port)
+            flowCounter("insert", service, rule_n1, ipaddr, protoc, port)
             f = open("/tmp/Teste0.txt", "a")
             f.write("FLOW MANAGEMENT START Ts: " + str(time.time())+"\n")
             f.close()
