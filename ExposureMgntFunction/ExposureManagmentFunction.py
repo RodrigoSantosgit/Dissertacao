@@ -8,6 +8,7 @@
 from fastapi import FastAPI
 from kafka import KafkaProducer  
 import subprocess
+import time
 
 app = FastAPI()
 
@@ -16,6 +17,12 @@ global storage
 
 storage = {}
 producer = KafkaProducer(bootstrap_servers='10.0.2.15:9092')
+
+global f
+
+f = open("/tmp/Teste0.txt", "w")
+f.write("SYSTEM TEST TIMESTAMPS \n")
+f.close()
 
 ###############################################
 #		Instantiate Service		#
@@ -35,6 +42,10 @@ def instantiateService(namespace="default", name="None", app="None", container_n
 		log('\n[ERROR] Something went wrong!\n')
 		return {"ERROR"}
 
+	f = open("/tmp/Teste0.txt", "a")
+	f.write("KAFKA INST MESSAGE Ts: " + str(time.time())+"\n")
+	f.close()
+
 	return {"SUCCESS"}
 
 
@@ -45,7 +56,7 @@ def instantiateService(namespace="default", name="None", app="None", container_n
 def deleteService(namespace="default", name="None"):
 
 	global producer
-
+	
 	if name == "None":
 		return {"ERROR"}
 
@@ -55,6 +66,10 @@ def deleteService(namespace="default", name="None"):
 	except:
 		log('\n[ERROR] Something went wrong!\n')
 		return {"ERROR"}
+		
+	f = open("/tmp/Teste0.txt", "a")
+	f.write("KAFKA DEL MESSAGE Ts: " + str(time.time())+"\n")
+	f.close()
 
 	return {"SUCCESS"}
 
@@ -63,22 +78,26 @@ def deleteService(namespace="default", name="None"):
 #	Instantiate Service Trigger Based	#
 ###############################################
 @app.put("/instantiateTriggerBasedService")
-def instantiateTriggerBasedService(namespace="default", name="None", app="None", container_name="None", image="None", max_flows: int = 0, min_flows: int = 0):
+def instantiateTriggerBasedService(namespace="default", name="None", app="None", container_name="None", image="None", max_flows: int = 0, ipaddr="None", protoc="None", port="None"):
 
 	global producer
 	global storage
 
-	if name=="None" or app=="None" or container_name=="None" or image=="None" or max_flows == 0 or min_flows == 0:
+	if name=="None" or app=="None" or container_name=="None" or image=="None" or max_flows == 0 or ipaddr=="None" or protoc=="None" or port=="None":
 		return {"ERROR"}
 		
 	storage[name] = [namespace, name, app, container_name, image]
 
 	try:
-		msg = '[NETCONTROLLER] [INSTANTIATE] [FLOWCOUNTER] ' + name + ' ' + str(max_flows) + ' ' + str(min_flows)
+		msg = '[NETCONTROLLER] [INSTANTIATE] [FLOWCOUNTER] ' + name + ' ' + str(max_flows) + ' ' + ipaddr + ' ' + protoc + ' ' + port
 		producer.send('NetManagment', msg.encode())
 	except:
 		log('\n[ERROR] Something went wrong!\n')
 		return {"ERROR"}
+		
+	f = open("/tmp/Teste0.txt", "a")
+	f.write("KAFKA FLOW COUNTER MESSAGE Ts: " + str(time.time())+"\n")
+	f.close()
 
 	return {"SUCCESS"}
 	
