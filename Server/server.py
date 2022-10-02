@@ -26,7 +26,8 @@ def main():
 	max_flows = '' # default
 	expMangFunc = '10.33.0.50' # default
 	serv_port = 5000 # default
-
+	inst = 0
+	
 	## ARGUMENT CHECKING -------
 	for i in range(1, len(sys.argv),2):
 	    if (sys.argv[i] == "--host" or sys.argv[i] == "-h") and i != len(sys.argv) - 1:
@@ -58,6 +59,7 @@ def main():
 	    f.write("INSTANTION REQUEST Ts: " + str(time.time()) +"\n")
 	    f.close()
 	    response = requests.put("http://" + expMangFunc + ":8000/instantiateService?namespace=default&name="+name+"&app="+name+"&container_name="+name+"&image="+image)
+	    inst = 1
 
 	# Instantiate Trigger for service instantiate
 	if mode == "triggerbased":
@@ -65,6 +67,7 @@ def main():
 	    f.write("FLOW CONTROL INSTANTION REQUEST Ts: " + str(time.time()) +"\n")
 	    f.close()
 	    response = requests.put("http://"+expMangFunc+":8000/instantiateTriggerBasedService?namespace=default&name="+name+"&app="+name+"&container_name="+name+"&image="+image+"&max_flows="+max_flows+"&ipaddr="+host+"&protoc=17"+"&port="+str(serv_port))
+	    inst = 1
 
 	# create a socket at server side
 	# using UDP / IP protocol
@@ -75,7 +78,7 @@ def main():
 	# and port number
 	conn.bind((host, serv_port))
 	
-	conn.settimeout(35)
+	conn.settimeout(5)
 	
 	## PROCESSING -------
 	time.sleep(2)
@@ -84,30 +87,40 @@ def main():
 	# encoding into binary string
 	msg = []
 	log(" - UDP COMMS - ")
+	sec = 0
 
 	while True:
 
 		try:
 			msg, addr = conn.recvfrom(1024)
 		except:
-			log("Exiting")
-			break
+			if sec == 35:
+				log("Exiting")
+				break
+			elif sec == 10 and mode == "triggerbased":
+				f = open("/tmp/Teste0.txt", "a")
+				f.write("DELETION REQUEST Ts: " + str(time.time()) +"\n")
+				f.close()
+				response = requests.delete("http://" + expMangFunc +":8000/deleteTriggerBasedService?name="+name)
+				inst = 0
+			sec = sec + 5
 
-		if msg.decode() == "Bye Server":
-			conn.sendto(b"Bye Client", (addr[0], addr[1]))
-			log("Bye Client")
-		else:
-			msg_to_send = "Received: " + msg.decode()
-			conn.sendto(msg_to_send.encode(), (addr[0], addr[1]))
-			log(msg_to_send)
+		if msg != []:
+			if msg.decode() == "Bye Server":
+				conn.sendto(b"Bye Client", (addr[0], addr[1]))
+				log("Bye Client")
+			else:
+				msg_to_send = "Received: " + msg.decode()
+				conn.sendto(msg_to_send.encode(), (addr[0], addr[1]))
+				log(msg_to_send)
 		
-		msg = []
+			msg = []
 
 	# disconnect the server
 	conn.close()
 	
 	# Delete k8s deployment instantiated in rightaway mode
-	if mode == "rightaway" or mode == "triggerbased":
+	if (mode == "rightaway" or mode == "triggerbased") and inst == 1:
 	    f = open("/tmp/Teste0.txt", "a")
 	    f.write("DELETION REQUEST Ts: " + str(time.time()) +"\n")
 	    f.close()
