@@ -86,7 +86,7 @@ def instantiateTriggerBasedService(namespace="default", name="None", app="None",
 	if name=="None" or app=="None" or container_name=="None" or image=="None" or max_flows == 0 or ipaddr=="None" or protoc=="None" or port=="None":
 		return {"ERROR"}
 		
-	storage[name] = [namespace, name, app, container_name, image]
+	storage[name] = [namespace, name, app, container_name, image, max_flows, ipaddr, protoc, port]
 
 	try:
 		msg = '[NETCONTROLLER] [INSTANTIATE] [FLOWCOUNTER] ' + name + ' ' + str(max_flows) + ' ' + ipaddr + ' ' + protoc + ' ' + port
@@ -97,6 +97,33 @@ def instantiateTriggerBasedService(namespace="default", name="None", app="None",
 		
 	f = open("/tmp/Teste0.txt", "a")
 	f.write("KAFKA FLOW COUNTER MESSAGE Ts: " + str(time.time())+"\n")
+	f.close()
+
+	return {"SUCCESS"}
+	
+###############################################
+#	Delete Service Trigger Based		#
+###############################################
+@app.delete("/deleteTriggerBasedService")
+def deleteTriggerBasedService(name="None"):
+
+	global producer
+	global storage
+
+	if name=="None":
+		return {"ERROR"}
+		
+	info = storage.get(name)
+
+	try:
+		msg = '[NETCONTROLLER] [DELETE] [FLOWCOUNTER] ' + name + ' ' + str(info[5]) + ' ' + info[6] + ' ' + info[7] + ' ' + info[8]
+		producer.send('NetManagment', msg.encode())
+	except:
+		log('\n[ERROR] Something went wrong!\n')
+		return {"ERROR"}
+		
+	f = open("/tmp/Teste0.txt", "a")
+	f.write("KAFKA FLOW COUNTER DEL MESSAGE Ts: " + str(time.time())+"\n")
 	f.close()
 
 	return {"SUCCESS"}
