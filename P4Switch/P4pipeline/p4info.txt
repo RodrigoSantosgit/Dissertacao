@@ -87,8 +87,20 @@ tables {
   }
   match_fields {
     id: 1
-    name: "meta.inc_flowid"
+    name: "hdr.udp.dport"
     bitwidth: 16
+    match_type: EXACT
+  }
+  match_fields {
+    id: 2
+    name: "hdr.ipv4.dstAddr"
+    bitwidth: 32
+    match_type: EXACT
+  }
+  match_fields {
+    id: 3
+    name: "hdr.ipv4.protocol"
+    bitwidth: 8
     match_type: EXACT
   }
   action_refs {
@@ -122,11 +134,6 @@ actions {
   }
   params {
     id: 1
-    name: "min"
-    bitwidth: 16
-  }
-  params {
-    id: 2
     name: "max"
     bitwidth: 16
   }
@@ -232,16 +239,6 @@ controller_packet_metadata {
     name: "egress_port"
     bitwidth: 16
   }
-  metadata {
-    id: 2
-    name: "flowid"
-    bitwidth: 16
-  }
-  metadata {
-    id: 3
-    name: "min"
-    bitwidth: 16
-  }
 }
 controller_packet_metadata {
   preamble {
@@ -260,27 +257,12 @@ controller_packet_metadata {
     name: "code"
     bitwidth: 16
   }
-  metadata {
-    id: 3
-    name: "new_flow"
-    bitwidth: 16
-  }
-  metadata {
-    id: 4
-    name: "flow_rm"
-    bitwidth: 16
-  }
-  metadata {
-    id: 5
-    name: "rm_flag"
-    bitwidth: 8
-  }
 }
 registers {
   preamble {
-    id: 383152451
-    name: "MyIngress.flows_register"
-    alias: "flows_register"
+    id: 384345539
+    name: "MyIngress.flows_register1"
+    alias: "flows_register1"
   }
   type_spec {
     bitstring {
@@ -293,14 +275,29 @@ registers {
 }
 registers {
   preamble {
-    id: 385629861
-    name: "MyIngress.timeout_register"
-    alias: "timeout_register"
+    id: 378502929
+    name: "MyIngress.flows_register2"
+    alias: "flows_register2"
   }
   type_spec {
     bitstring {
       bit {
-        bitwidth: 48
+        bitwidth: 16
+      }
+    }
+  }
+  size: 16
+}
+registers {
+  preamble {
+    id: 383245218
+    name: "MyIngress.flows_register3"
+    alias: "flows_register3"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 16
       }
     }
   }
@@ -316,36 +313,6 @@ registers {
     bitstring {
       bit {
         bitwidth: 16
-      }
-    }
-  }
-  size: 1
-}
-registers {
-  preamble {
-    id: 382907611
-    name: "MyIngress.latest_flow_register"
-    alias: "latest_flow_register"
-  }
-  type_spec {
-    bitstring {
-      bit {
-        bitwidth: 16
-      }
-    }
-  }
-  size: 1
-}
-registers {
-  preamble {
-    id: 384692412
-    name: "MyIngress.requested_register"
-    alias: "requested_register"
-  }
-  type_spec {
-    bitstring {
-      bit {
-        bitwidth: 1
       }
     }
   }
