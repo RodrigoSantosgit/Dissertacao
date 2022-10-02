@@ -127,7 +127,7 @@ def checkAction(msg):
             service = msg.split(' ')[3:]
             info = requests.get("http://"+expMngFncAPI+":8000/fetchInfo?service="+service[0]).content.decode()
             
-            namespace, name, app, container_name, image = info.replace('"', '').replace('[', '').replace(']','').split(",")
+            namespace, name, app, container_name, image, max_flows, ipaddr, protoc, port = info.replace('"', '').replace('[', '').replace(']','').split(",")
 
             log(" - creating deployment -")
             res_dep = create_deployment(namespace, name, app, container_name, image)
@@ -192,7 +192,7 @@ def checkAction(msg):
             info = requests.get("http://"+expMngFncAPI+":8000/fetchInfo?service="+service[0]).content.decode()
             
             if info != None and info != "null":
-                namespace, name, app, container_name, image = info.replace('"', '').replace('[', '').replace(']','').split(",")
+                namespace, name, app, container_name, image, max_flows, ipaddr, protoc, port = info.replace('"', '').replace('[', '').replace(']','').split(",")
             
                 log(" - deleting deployment -")
                 res_dep = delete_deployment(namespace, name)
@@ -206,7 +206,7 @@ def checkAction(msg):
                 f.close()
             
                 if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                    msg_out = '[NETCONTROLLER] [DELETE] ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000'
+                    msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000 '
                     producer.send('NetManagment', msg_out.encode())
                     msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:1e 5000 10.31.0.30'
                     producer.send('NetManagment', msg_out.encode())
