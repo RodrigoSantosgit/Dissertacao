@@ -16,11 +16,14 @@ def main():
 
 	time.sleep(10)
 	
+	f = open("/tmp/Teste0.txt", "w")
+	f.write("SYSTEM TEST TIMESTAMPS \n")
+	f.close()
+	
 	host = 'localhost' #default
 	name = '' # default
 	image = '' # default
 	max_flows = '' # default
-	min_flows = '' # default
 	expMangFunc = '10.33.0.50' # default
 	serv_port = 5000 # default
 
@@ -43,8 +46,6 @@ def main():
 	        image = sys.argv[i + 1]
 	    elif (sys.argv[i] == "--maxflows") and i != len(sys.argv) - 1:
 	        max_flows = sys.argv[i + 1]
-	    elif (sys.argv[i] == "--minflows") and i != len(sys.argv) - 1:
-	        min_flows = sys.argv[i + 1]
 	    else:
 	        print("[ERROR] Unknown argument: " + sys.argv[i] + "\n")
 	        quit()
@@ -53,11 +54,17 @@ def main():
 	## INITIALIZATIONS -------
 	# Instantiate k8s deployment rightaway
 	if mode == "rightaway":
+	    f = open("/tmp/Teste0.txt", "a")
+	    f.write("INSTANTION REQUEST Ts: " + str(time.time()) +"\n")
+	    f.close()
 	    response = requests.put("http://" + expMangFunc + ":8000/instantiateService?namespace=default&name="+name+"&app="+name+"&container_name="+name+"&image="+image)
+
 	# Instantiate Trigger for service instantiate
 	if mode == "triggerbased":
-	    response = requests.put("http://"+expMangFunc+":8000/instantiateTriggerBasedService?namespace=default&name="+name+"&app="+name+"&container_name="+name+"&image="+image+"&max_flows="+max_flows+"&min_flows="+min_flows)
-	
+	    f = open("/tmp/Teste0.txt", "a")
+	    f.write("FLOW CONTROL INSTANTION REQUEST Ts: " + str(time.time()) +"\n")
+	    f.close()
+	    response = requests.put("http://"+expMangFunc+":8000/instantiateTriggerBasedService?namespace=default&name="+name+"&app="+name+"&container_name="+name+"&image="+image+"&max_flows="+max_flows+"&ipaddr="+host+"&protoc=17"+"&port="+str(serv_port))
 
 	# create a socket at server side
 	# using UDP / IP protocol
@@ -100,7 +107,10 @@ def main():
 	conn.close()
 	
 	# Delete k8s deployment instantiated in rightaway mode
-	if mode == "rightaway":
+	if mode == "rightaway" or mode == "triggerbased":
+	    f = open("/tmp/Teste0.txt", "a")
+	    f.write("DELETION REQUEST Ts: " + str(time.time()) +"\n")
+	    f.close()
 	    response = requests.delete("http://" + expMangFunc +":8000/deleteService?name="+name)
 
 
