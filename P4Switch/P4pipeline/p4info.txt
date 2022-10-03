@@ -271,37 +271,7 @@ registers {
       }
     }
   }
-  size: 16
-}
-registers {
-  preamble {
-    id: 378502929
-    name: "MyIngress.flows_register2"
-    alias: "flows_register2"
-  }
-  type_spec {
-    bitstring {
-      bit {
-        bitwidth: 16
-      }
-    }
-  }
-  size: 16
-}
-registers {
-  preamble {
-    id: 383245218
-    name: "MyIngress.flows_register3"
-    alias: "flows_register3"
-  }
-  type_spec {
-    bitstring {
-      bit {
-        bitwidth: 16
-      }
-    }
-  }
-  size: 16
+  size: 64
 }
 registers {
   preamble {

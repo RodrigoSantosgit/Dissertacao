@@ -17,10 +17,9 @@ typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
 typedef bit<32> PacketCounter_t;
 
-#define REGISTER_LENGTH 16
-#define PKT_INSTANCE_TYPE_NORMAL 0
+#define REGISTER_LENGTH 64
 #define REGISTER_CELL_BIT_WIDTH 16
-#define SERVICE_ID hash(meta.service_id, HashAlgorithm.crc16, (bit<16>)0, {(bit<16>)0x1388, (bit<32>)0x0a1e001e, UDP}, (bit<16>)REGISTER_LENGTH)
+#define PKT_INSTANCE_TYPE_NORMAL 0
 
 @controller_header("packet_out")
 header packet_out_header_t {
@@ -155,8 +154,6 @@ control MyIngress(inout headers hdr,
     counter(16, CounterType.packets_and_bytes) flux_counter;
     
     register<bit<REGISTER_CELL_BIT_WIDTH>>(REGISTER_LENGTH) flows_register1;
-    register<bit<REGISTER_CELL_BIT_WIDTH>>(REGISTER_LENGTH) flows_register2;
-    register<bit<REGISTER_CELL_BIT_WIDTH>>(REGISTER_LENGTH) flows_register3;
     register<bit<REGISTER_CELL_BIT_WIDTH>>(1) count_register;
 
     action drop() {
@@ -170,16 +167,16 @@ control MyIngress(inout headers hdr,
         hash(meta.flows_index3, HashAlgorithm.xor16, (bit<16>)0, {hdr.udp.dport, hdr.ipv4.dstAddr, hdr.ipv4.protocol, hdr.udp.sport, hdr.ipv4.srcAddr}, (bit<16>) REGISTER_LENGTH);
         
         flows_register1.read(meta.value1, (bit<32>)meta.flows_index1);
-        flows_register2.read(meta.value2, (bit<32>)meta.flows_index2);
-        flows_register3.read(meta.value3, (bit<32>)meta.flows_index3);
+        flows_register1.read(meta.value2, (bit<32>)meta.flows_index2);
+        flows_register1.read(meta.value3, (bit<32>)meta.flows_index3);
         
         meta.value1 = meta.value1 + 1;
         meta.value2 = meta.value2 + 1;
         meta.value3 = meta.value3 + 1;
         
         flows_register1.write(meta.flows_index1, meta.value1);
-        flows_register2.write(meta.flows_index2, meta.value2);
-        flows_register3.write(meta.flows_index3, meta.value3);
+        flows_register1.write(meta.flows_index2, meta.value2);
+        flows_register1.write(meta.flows_index3, meta.value3);
 
         meta.max = max;
         meta.counted = (bit<8>)0;
@@ -283,8 +280,6 @@ control MyIngress(inout headers hdr,
         else if (hdr.ipv4.isValid()) {
             
             flux_counter.count((bit<32>) standard_metadata.ingress_port);
-            
-            hash(meta.inc_flowid, HashAlgorithm.crc16, (bit<16>)0, {hdr.udp.dport, hdr.ipv4.dstAddr, hdr.ipv4.protocol}, (bit<16>)REGISTER_LENGTH);
             
             if (flow_detection.apply().hit){
                 if (meta.value1 == (bit<16>)1){
