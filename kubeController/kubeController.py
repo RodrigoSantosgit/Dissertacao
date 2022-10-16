@@ -107,13 +107,9 @@ def checkAction(msg):
             f.close()
             
             if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000 '
+                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 10.0.2.15 31000'
                 producer.send('NetManagment', msg_out.encode())
-                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:1e 5000 10.31.0.30'
-                producer.send('NetManagment', msg_out.encode())
-                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:1f 5000 10.31.0.31'
-                producer.send('NetManagment', msg_out.encode())
-                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:20 5000 10.31.0.32'
+                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 10.30.0.30 5000'
                 producer.send('NetManagment', msg_out.encode())
             else:
                 msg_out = '[MANAGMENT] [ERROR] [DELETE]'
@@ -141,13 +137,9 @@ def checkAction(msg):
             f.close()
             
             if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000 '
+                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 10.0.2.15 31000'
                 producer.send('NetManagment', msg_out.encode())
-                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:1e 5000 10.31.0.30'
-                producer.send('NetManagment', msg_out.encode())
-                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:1f 5000 10.31.0.31'
-                producer.send('NetManagment', msg_out.encode())
-                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:20 5000 10.31.0.32'
+                msg_out = '[NETCONTROLLER] [INSERT] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 10.30.0.30 5000'
                 producer.send('NetManagment', msg_out.encode())
             else:
                 msg_out = '[MANAGMENT] [ERROR] [DELETE]'
@@ -172,13 +164,9 @@ def checkAction(msg):
             f.close()
         
             if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000 '
+                msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 10.0.2.15 31000'
                 producer.send('NetManagment', msg_out.encode())
-                msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:1e 5000 10.31.0.30'
-                producer.send('NetManagment', msg_out.encode())
-                msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:1f 5000 10.31.0.31'
-                producer.send('NetManagment', msg_out.encode())
-                msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:20 5000 10.31.0.32'
+                msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 10.30.0.30 5000'
                 producer.send('NetManagment', msg_out.encode())
             else:
                 msg_out = '[MANAGMENT] [ERROR] [DELETE]'
@@ -206,13 +194,9 @@ def checkAction(msg):
                 f.close()
             
                 if res_dep == {"SUCCESS"} and res_ser == {"SUCCESS"}:
-                    msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 4 10.0.2.15 08:00:27:93:75:80 31000 '
+                    msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_lpm MyIngress.ipv4_nat_forward 10.30.0.30 10.0.2.15 31000'
                     producer.send('NetManagment', msg_out.encode())
-                    msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:1e 5000 10.31.0.30'
-                    producer.send('NetManagment', msg_out.encode())
-                    msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:1f 5000 10.31.0.31'
-                    producer.send('NetManagment', msg_out.encode())
-                    msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 2 10.30.0.30 02:42:0a:1f:00:20 5000 10.31.0.32'
+                    msg_out = '[NETCONTROLLER] [DELETE] '+ name +' ipv4_nat_answer MyIngress.ipv4_nat_answer_forward 10.0.2.15 10.30.0.30 5000'
                     producer.send('NetManagment', msg_out.encode())
                 else:
                     msg_out = '[MANAGMENT] [ERROR] [DELETE]'
@@ -386,57 +370,6 @@ def delete_service(namespace="default", name="None"):
        return {"ERROR"}
        
     return {"SUCCESS"}
-
-
-###############################################
-#		Create Ingress 		#
-###############################################
-def create_ingress(networking_v1_api):
-    body = kubernetes.client.V1Ingress(
-        api_version="networking.k8s.io/v1",
-        kind="Ingress",
-        metadata=kubernetes.client.V1ObjectMeta(name="ingress-example", annotations={
-            "nginx.ingress.kubernetes.io/rewrite-target": "/"
-        }),
-        spec=kubernetes.client.V1IngressSpec(
-            rules=[kubernetes.client.V1IngressRule(
-                host="example.com",
-                http=kubernetes.client.V1HTTPIngressRuleValue(
-                    paths=[kubernetes.client.V1HTTPIngressPath(
-                        path="/",
-                        path_type="Exact",
-                        backend=kubernetes.client.V1IngressBackend(
-                            service=kubernetes.client.V1IngressServiceBackend(
-                                port=kubernetes.client.V1ServiceBackendPort(
-                                    number=5678,
-                                ),
-                                name="service-example")
-                            )
-                    )]
-                )
-            )
-            ]
-        )
-    )
-    # Creation of the Deployment in specified namespace
-    # (Can replace "default" with a namespace you may have created)
-    networking_v1_api.create_namespaced_ingress(
-        namespace="default",
-        body=body
-    )
-
-
-###############################################
-#		Delete Ingress 		#
-###############################################
-def delete_ingress(networking_v1_api):
-    
-    # Creation of the Deployment in specified namespace
-    networking_v1_api.delete_namespaced_ingress(
-        name="ingress-example",
-        namespace="default"
-    )
-
 
 ###############################################
 #		List Pods			#
