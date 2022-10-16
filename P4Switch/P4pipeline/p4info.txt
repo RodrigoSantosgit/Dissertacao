@@ -15,7 +15,7 @@ tables {
   }
   match_fields {
     id: 2
-    name: "hdr.ipv4.dstAddr"
+    name: "hdr.ipv4.srcAddr"
     bitwidth: 32
     match_type: LPM
   }
@@ -69,7 +69,7 @@ tables {
     match_type: LPM
   }
   action_refs {
-    id: 28792405
+    id: 18216711
   }
   action_refs {
     id: 25652968
@@ -111,6 +111,26 @@ tables {
   }
   size: 1024
 }
+tables {
+  preamble {
+    id: 42906236
+    name: "MyIngress.l2_forwarding"
+    alias: "l2_forwarding"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.ipv4.dstAddr"
+    bitwidth: 32
+    match_type: EXACT
+  }
+  action_refs {
+    id: 25883707
+  }
+  action_refs {
+    id: 21257015
+  }
+  size: 1024
+}
 actions {
   preamble {
     id: 21257015
@@ -124,6 +144,23 @@ actions {
     id: 25652968
     name: "MyIngress.drop"
     alias: "drop"
+  }
+}
+actions {
+  preamble {
+    id: 25883707
+    name: "MyIngress.l2_forward"
+    alias: "l2_forward"
+  }
+  params {
+    id: 1
+    name: "dstAddr"
+    bitwidth: 48
+  }
+  params {
+    id: 2
+    name: "port"
+    bitwidth: 9
   }
 }
 actions {
@@ -147,9 +184,9 @@ actions {
 }
 actions {
   preamble {
-    id: 28792405
-    name: "MyIngress.ipv4_forward"
-    alias: "ipv4_forward"
+    id: 18216711
+    name: "MyIngress.ipv4_forward_api"
+    alias: "ipv4_forward_api"
   }
   params {
     id: 1
@@ -164,27 +201,24 @@ actions {
 }
 actions {
   preamble {
+    id: 28792405
+    name: "MyIngress.ipv4_forward"
+    alias: "ipv4_forward"
+  }
+}
+actions {
+  preamble {
     id: 33285504
     name: "MyIngress.ipv4_nat_forward"
     alias: "ipv4_nat_forward"
   }
   params {
     id: 1
-    name: "dstAddr"
-    bitwidth: 48
-  }
-  params {
-    id: 2
-    name: "port"
-    bitwidth: 9
-  }
-  params {
-    id: 3
-    name: "newipaddr"
+    name: "dstipaddr"
     bitwidth: 32
   }
   params {
-    id: 4
+    id: 2
     name: "dport"
     bitwidth: 16
   }
@@ -197,35 +231,14 @@ actions {
   }
   params {
     id: 1
-    name: "dstMacAddr"
-    bitwidth: 48
-  }
-  params {
-    id: 2
-    name: "port"
-    bitwidth: 9
-  }
-  params {
-    id: 3
     name: "originaldestIpAddr"
     bitwidth: 32
   }
   params {
-    id: 4
+    id: 2
     name: "sport"
     bitwidth: 16
   }
-}
-counters {
-  preamble {
-    id: 303425801
-    name: "MyIngress.flux_counter"
-    alias: "flux_counter"
-  }
-  spec {
-    unit: BOTH
-  }
-  size: 16
 }
 controller_packet_metadata {
   preamble {

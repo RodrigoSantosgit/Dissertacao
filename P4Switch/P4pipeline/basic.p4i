@@ -1023,13 +1023,17 @@ control MyIngress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
 
-    counter(16, CounterType.packets_and_bytes) flux_counter;
-
     register<bit<16>>(64) flows_register1;
     register<bit<16>>(1) count_register;
 
     action drop() {
         mark_to_drop(standard_metadata);
+    }
+
+    action l2_forward(macAddr_t dstAddr, egressSpec_t port){
+        hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+        hdr.ethernet.dstAddr = dstAddr;
+        standard_metadata.egress_spec = port;
     }
 
     action update_flow(bit<16>max) {
@@ -1060,32 +1064,33 @@ control MyIngress(inout headers hdr,
         clone_preserving_field_list(CloneType.I2E, CPU_CLONE_SESSION_ID, 0);
     }
 
-    action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
-        standard_metadata.egress_spec = port;
+    action ipv4_forward_api(macAddr_t dstAddr, egressSpec_t port) {
+        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
+        standard_metadata.egress_spec = port;
+    }
+
+    action ipv4_forward() {
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
-    action ipv4_nat_forward(macAddr_t dstAddr, egressSpec_t port, ip4Addr_t newipaddr, bit<16> dport) {
-        standard_metadata.egress_spec = port;
-        hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
-        hdr.ethernet.dstAddr = dstAddr;
+
+    action ipv4_nat_forward(ip4Addr_t dstipaddr, bit<16> dport) {
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
-        hdr.ipv4.dstAddr = newipaddr;
+        hdr.ipv4.dstAddr = dstipaddr;
         hdr.udp.dport = dport;
     }
-    action ipv4_nat_answer_forward(macAddr_t dstMacAddr, egressSpec_t port, ip4Addr_t originaldestIpAddr, bit<16> sport) {
-        standard_metadata.egress_spec = port;
-        hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
-        hdr.ethernet.dstAddr = dstMacAddr;
+
+    action ipv4_nat_answer_forward(ip4Addr_t originaldestIpAddr, bit<16> sport) {
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
         hdr.ipv4.srcAddr = originaldestIpAddr;
         hdr.udp.sport = sport;
     }
+
     table ipv4_nat_answer {
         key = {
             standard_metadata.ingress_port: exact;
-            hdr.ipv4.dstAddr: lpm;
+            hdr.ipv4.srcAddr: lpm;
         }
         actions = {
             ipv4_nat_answer_forward;
@@ -1095,6 +1100,7 @@ control MyIngress(inout headers hdr,
         size = 1024;
         default_action = drop();
     }
+
     table ipv4_lpm {
         key = {
             hdr.ipv4.dstAddr: lpm;
@@ -1114,7 +1120,7 @@ control MyIngress(inout headers hdr,
             hdr.ipv4.srcAddr: lpm;
         }
         actions = {
-            ipv4_forward;
+            ipv4_forward_api;
             drop;
             NoAction;
         }
@@ -1136,6 +1142,18 @@ control MyIngress(inout headers hdr,
         default_action = NoAction();
     }
 
+    table l2_forwarding{
+        key = {
+            hdr.ipv4.dstAddr: exact;
+        }
+        actions = {
+            l2_forward;
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }
+
     apply {
         if (standard_metadata.ingress_port == CPU_PORT) {
             // Packet received from CPU_PORT, this is a packet-out sent by the
@@ -1150,8 +1168,6 @@ control MyIngress(inout headers hdr,
 
         }
         else if (hdr.ipv4.isValid()) {
-
-            flux_counter.count((bit<32>) standard_metadata.ingress_port);
 
             if (flow_detection.apply().hit){
                 if (meta.value1 == (bit<16>)1){
@@ -1197,6 +1213,7 @@ control MyIngress(inout headers hdr,
                 if (ipv4_nat_answer.apply().miss){
                     ipv4_lpm.apply();
                 }
+                l2_forwarding.apply();
             }
         }
     }
