@@ -19,9 +19,6 @@ from p4.v1 import p4runtime_pb2
 import p4runtime_sh.shell as sh
 import p4runtime_lib.helper
 
-global port1_flux
-global timestamps
-global port4_flux
 global CPU_PORT
 global consumer
 global producer
@@ -29,14 +26,7 @@ global readCounterEnabled
 global port_FlowMapping
 global ask_inst
 global ask_del
-global flows
-global next
 
-port1_flux = []
-timestamps = []
-port4_flux = []
-next = 0
-flows = []
 CPU_PORT = '255'
 ask_del = 1
 ask_inst = 0
@@ -47,17 +37,25 @@ producer = KafkaProducer(bootstrap_servers='10.0.2.15:9092')
 
 
 #############################################################################################
-# 				INSERT IPV4 LPM ENTRIES					#
+# 				INSERT L2 ENTRIES					#
 #############################################################################################
-def insertipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr='', port=''):
-    te = sh.TableEntry("MyIngress.ipv4_lpm")(action = action_name)
+def insertl2Entry(ipv4_dst, dstAddr, egress_port):
+    te = sh.TableEntry("MyIngress.l2_forwarding")(action = "MyIngress.l2_forward")
     te.match["hdr.ipv4.dstAddr"] = ipv4_dst
     te.action["port"] = egress_port
-    te.action["dstAddr"] = macAddr
+    te.action["dstAddr"] = dstAddr
+    te.insert()
+
+#############################################################################################
+# 				INSERT IPV4 LPM ENTRIES					#
+#############################################################################################
+def insertipv4Entry(action_name, ipv4_dst, dstipaddr='', dport=''):
+    te = sh.TableEntry("MyIngress.ipv4_lpm")(action = action_name)
+    te.match["hdr.ipv4.dstAddr"] = ipv4_dst
     
     if action_name == "MyIngress.ipv4_nat_forward":
-        te.action["newipaddr"] = newipaddr
-        te.action["dport"] = port
+        te.action["dstipaddr"] = dstipaddr
+        te.action["dport"] = dport
         te.modify()
         return
     te.insert()
@@ -66,40 +64,36 @@ def insertipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr='', p
 #############################################################################################
 # 				DELETE IPV4 LPM ENTRIES					#
 #############################################################################################
-def deleteipv4Entry(action_name, macAddr, ipv4_dst, egress_port, newipaddr='', port=''):
+def deleteipv4Entry(action_name, ipv4_dst, dstipaddr='', dport=''):
     te = sh.TableEntry("MyIngress.ipv4_lpm")(action = action_name)
     te.match["hdr.ipv4.dstAddr"] = ipv4_dst
-    te.action["port"] = egress_port
-    te.action["dstAddr"] = macAddr
+    
     if action_name == "MyIngress.ipv4_nat_forward":
-        te.action["newipaddr"] = newipaddr
-        te.action["dport"] = port
+        te.action["dstipaddr"] = dstipaddr
+        te.action["dport"] = dport
+
     te.delete()
 
 
 #############################################################################################
 # 				INSERT IPV4 NATAnswer ENTRIES					#
 #############################################################################################
-def insertNatAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, port):
+def insertNatAnswerEntry(srcAddr, ipaddr, port):
     te = sh.TableEntry("MyIngress.ipv4_nat_answer")(action = "MyIngress.ipv4_nat_answer_forward")
     te.match["standard_metadata.ingress_port"] = '4'
-    te.match["hdr.ipv4.dstAddr"] = ipv4_dst
+    te.match["hdr.ipv4.srcAddr"] = srcAddr
     te.action["originaldestIpAddr"] = ipaddr
-    te.action["port"] = egress_port
-    te.action["dstMacAddr"] = destMacAddr
     te.action["sport"] = port
     te.insert()
     
 #############################################################################################
 # 				DELETE IPV4 NATAnswer ENTRIES					#
 #############################################################################################
-def deleteNatAnswerEntry(ipaddr, egress_port, destMacAddr, srcAddr, ipv4_dst, port):
+def deleteNatAnswerEntry(srcAddr, ipaddr, port):
     te = sh.TableEntry("MyIngress.ipv4_nat_answer")(action = "MyIngress.ipv4_nat_answer_forward")
     te.match["standard_metadata.ingress_port"] = '4'
-    te.match["hdr.ipv4.dstAddr"] = ipv4_dst
+    te.match["hdr.ipv4.srcAddr"] = srcAddr
     te.action["originaldestIpAddr"] = ipaddr
-    te.action["port"] = egress_port
-    te.action["dstMacAddr"] = destMacAddr
     te.action["sport"] = port
     te.delete()
 
@@ -126,7 +120,7 @@ def flowCounter(mode, service, max_rule, ipaddr, protoc, port):
     if mode == "insert":
         te.insert()
     if mode == "delete":
-        te.delete
+        te.delete()
     
 
 #############################################################################################
@@ -135,9 +129,6 @@ def flowCounter(mode, service, max_rule, ipaddr, protoc, port):
 def sendPacketOut(service):
 
     global CPU_PORT
-    global flows
-    global next
-    global port_FlowMapping
 
     p = sh.PacketOut()
     p.payload = b'monitor packet'
@@ -150,9 +141,6 @@ def sendPacketOut(service):
 #############################################################################################
 def parsePacketIn(msg):
     
-    global flows
-    global next
-    
     code = int(msg.packet.metadata[1].value.hex(), base=16)
 
     if code == None or code == 0:
@@ -160,32 +148,6 @@ def parsePacketIn(msg):
     else:
         return code
 
-
-#############################################################################################
-# 					PRINT COUNTER INFO					#
-#############################################################################################
-def printCounter(counter):
-
-    global port1_flux
-    global timestamps 
-    global port4_flux 
-
-    counts = sh.CounterEntry(counter).read()
-
-    for item in counts:
-        if item.index == 1: 
-            num_packets = item.data.packet_count
-            port1_flux = port1_flux + [num_packets]
-        if item.index == 4:
-            num_packets = item.data.packet_count
-            port4_flux = port4_flux + [num_packets]
-            
-    timestamps = timestamps + [time.time()]
-        
-    '''if timestamps[-1] - timestamps[0] > 40:
-        log(str(port1_flux))
-        log(str(timestamps))
-        log(str(port4_flux))'''
 
 #############################################################################################
 # 					CHECK fLOW COUNTER					#
@@ -221,12 +183,12 @@ def checkAction(msg):
 
     if action == '[INSERT]':
         log(" - creating service route -")
-        name, table, action_name, ipaddr, egress_port, newipaddr, newmacaddr, port, srcaddr = msg.split(' ')[2:]
+        name, table, action_name, ipaddr, newipaddr, port = msg.split(' ')[2:]
         
         if table == 'ipv4_lpm':
             log(" - inserting entry -")
             try:
-                insertipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr, port)
+                insertipv4Entry(action_name, ipaddr, newipaddr, port)
                 f = open("/tmp/Teste0.txt", "a")
                 f.write("ROUTE TO KUBERNETES Ts: " + str(time.time())+"\n")
                 f.close()
@@ -236,7 +198,7 @@ def checkAction(msg):
         if table == 'ipv4_nat_answer':
             log(" - inserting entry -")
             try:
-                insertNatAnswerEntry(newipaddr, egress_port, newmacaddr, ipaddr, srcaddr, port)
+                insertNatAnswerEntry(ipaddr, newipaddr, port)
                 f = open("/tmp/Teste0.txt", "a")
                 f.write("ROUTE KUBERNETES ANSWER Ts: " + str(time.time())+"\n")
                 f.close()
@@ -259,17 +221,22 @@ def checkAction(msg):
             producer.send('ComputationManagment', msg_out.encode())
         
         else:
-            name, table, action_name, ipaddr, egress_port, newipaddr, newmacaddr, port, srcaddr = msg.split(' ')[2:]
+            name, table, action_name, ipaddr, newipaddr, port = msg.split(' ')[2:]
         
             if table == 'ipv4_nat_answer':
                 log(" - deleting entry -")
-                deleteNatAnswerEntry(newipaddr, egress_port, newmacaddr, ipaddr, srcaddr, port)
-        
+                deleteNatAnswerEntry(ipaddr, newipaddr, port)
+                f = open("/tmp/Teste0.txt", "a")
+                f.write("DELETE ROUTE Ts: " + str(time.time())+"\n")
+                f.close()
             if table == 'ipv4_lpm':
                 log(" - deleting entry -")
-                deleteipv4Entry(action_name, newmacaddr, ipaddr, egress_port, newipaddr, port)
+                deleteipv4Entry(action_name, ipaddr, newipaddr, port)
+                f = open("/tmp/Teste0.txt", "a")
+                f.write("DELETE ROUTE Ts: " + str(time.time())+"\n")
+                f.close()
                 if action_name == 'MyIngress.ipv4_nat_forward':
-                    insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1e:00:1e", ipaddr, "1")
+                    insertipv4Entry("MyIngress.ipv4_forward", ipaddr)
                     f = open("/tmp/Teste0.txt", "a")
                     f.write("ROUTE BACK TO SERVER Ts: " + str(time.time())+"\n")
                     f.close()
@@ -309,17 +276,24 @@ def main(p4info_file_path, bmv2_file_path):
         cse.add(255, 1)
         cse.insert()
     
-        te = sh.TableEntry("MyIngress.ipv4_api")(action = "MyIngress.ipv4_forward")
+        te = sh.TableEntry("MyIngress.ipv4_api")(action = "MyIngress.ipv4_forward_api")
         te.match["hdr.ipv4.srcAddr"] = "10.33.0.50"
         te.action["port"] = "1"
         te.action["dstAddr"] = "02:42:0a:1e:00:1e"
         te.insert()
 
-        insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1e:00:1e", "10.30.0.30", "1")
-        insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1f:00:1e", "10.31.0.30", "2")
-        insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:21:00:32", "10.33.0.50", "3")
-        insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1f:00:1f", "10.31.0.31", "2")
-        insertipv4Entry("MyIngress.ipv4_forward", "02:42:0a:1f:00:20", "10.31.0.32", "2")
+        insertl2Entry("10.30.0.30", "02:42:0a:1e:00:1e", "1")
+        insertl2Entry("10.31.0.30", "02:42:0a:1f:00:1e", "2")
+        insertl2Entry("10.31.0.31", "02:42:0a:1f:00:1f", "2")
+        insertl2Entry("10.31.0.32", "02:42:0a:1f:00:20", "2")
+        insertl2Entry("10.33.0.50", "02:42:0a:21:00:32", "3")
+        insertl2Entry("10.0.2.15", "08:00:27:93:75:80", "4")
+
+        insertipv4Entry("MyIngress.ipv4_forward", "10.30.0.30")
+        insertipv4Entry("MyIngress.ipv4_forward", "10.31.0.30")
+        insertipv4Entry("MyIngress.ipv4_forward", "10.33.0.50")
+        insertipv4Entry("MyIngress.ipv4_forward", "10.31.0.31")
+        insertipv4Entry("MyIngress.ipv4_forward", "10.31.0.32")
         
         packet_in = sh.PacketIn()
 
