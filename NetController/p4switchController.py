@@ -6,18 +6,14 @@
 '''
 import argparse
 import os
-import sys
-import time
 from kafka import KafkaConsumer
 from kafka import KafkaProducer
 import subprocess
-import json
 import grpc
 from p4.v1 import p4runtime_pb2
 # Import P4Runtime lib from parent utils dir
 # Probably there's a better way of doing this.
 import p4runtime_sh.shell as sh
-import p4runtime_lib.helper
 
 global CPU_PORT
 global consumer
@@ -162,9 +158,6 @@ def checkFlowCounter(code):
         log(' - Asking for k8s service instantiation - ')
         msg_out = '[COMPUTATIONCONTROLLER] [INSTANTIATE] [TRIGGERED] ' + list(port_FlowMapping.keys())[0]
         producer.send('ComputationManagment', msg_out.encode())
-        f = open("/tmp/Teste0.txt", "a")
-        f.write("kubernetes Inst Request Ts: " + str(time.time())+"\n")
-        f.close()
         ask_inst = 1
         ask_del = 0
 
@@ -189,9 +182,6 @@ def checkAction(msg):
             log(" - inserting entry -")
             try:
                 insertipv4Entry(action_name, ipaddr, newipaddr, port)
-                f = open("/tmp/Teste0.txt", "a")
-                f.write("ROUTE TO KUBERNETES Ts: " + str(time.time())+"\n")
-                f.close()
             except:
                 msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [RIGHTAWAY] ' + name
                 producer.send('ComputationManagment', msg_out.encode())
@@ -199,9 +189,6 @@ def checkAction(msg):
             log(" - inserting entry -")
             try:
                 insertNatAnswerEntry(ipaddr, newipaddr, port)
-                f = open("/tmp/Teste0.txt", "a")
-                f.write("ROUTE KUBERNETES ANSWER Ts: " + str(time.time())+"\n")
-                f.close()
             except:
                 msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [RIGHTAWAY] ' + name
                 producer.send('ComputationManagment', msg_out.encode())
@@ -214,9 +201,6 @@ def checkAction(msg):
             service, rule_n1, ipaddr, protoc, port = msg.split(' ')[3:]
             log(" - deleting flow counter -")
             flowCounter("delete", service, rule_n1, ipaddr, protoc, port)
-            f = open("/tmp/Teste0.txt", "a")
-            f.write("FLOW MANAGEMENT END Ts: " + str(time.time())+"\n")
-            f.close()
             msg_out = '[COMPUTATIONCONTROLLER] [DELETE] [TRIGGERED] ' + service
             producer.send('ComputationManagment', msg_out.encode())
         
@@ -226,20 +210,11 @@ def checkAction(msg):
             if table == 'ipv4_nat_answer':
                 log(" - deleting entry -")
                 deleteNatAnswerEntry(ipaddr, newipaddr, port)
-                f = open("/tmp/Teste0.txt", "a")
-                f.write("DELETE ROUTE Ts: " + str(time.time())+"\n")
-                f.close()
             if table == 'ipv4_lpm':
                 log(" - deleting entry -")
                 deleteipv4Entry(action_name, ipaddr, newipaddr, port)
-                f = open("/tmp/Teste0.txt", "a")
-                f.write("DELETE ROUTE Ts: " + str(time.time())+"\n")
-                f.close()
                 if action_name == 'MyIngress.ipv4_nat_forward':
                     insertipv4Entry("MyIngress.ipv4_forward", ipaddr)
-                    f = open("/tmp/Teste0.txt", "a")
-                    f.write("ROUTE BACK TO SERVER Ts: " + str(time.time())+"\n")
-                    f.close()
             
     if action == '[INSTANTIATE]':
         impl_object, service, rule_n1, ipaddr, protoc, port = msg.split(' ')[2:]
@@ -247,9 +222,6 @@ def checkAction(msg):
         if impl_object == '[FLOWCOUNTER]':
             log(" - creating flow counter -")
             flowCounter("insert", service, rule_n1, ipaddr, protoc, port)
-            f = open("/tmp/Teste0.txt", "a")
-            f.write("FLOW MANAGEMENT START Ts: " + str(time.time())+"\n")
-            f.close()
             
 
 ############################################################################################
@@ -266,10 +238,6 @@ def main(p4info_file_path, bmv2_file_path):
         election_id=(0, 1), # (high, low)
         config=sh.FwdPipeConfig(p4info_file_path, bmv2_file_path)
     )
-    
-    f = open("/tmp/Teste0.txt", "w")
-    f.write("SYSTEM TEST TIMESTAMPS\n")
-    f.close()
     
     try:
         cse = sh.CloneSessionEntry(500)
@@ -310,9 +278,6 @@ def main(p4info_file_path, bmv2_file_path):
             if msg:
                 for tp in msg:
                     for for_proc_msg in msg.get(tp):
-                        f = open("/tmp/Teste0.txt", "a")
-                        f.write("KAFKA MESSAGE Ts: " + str(time.time()) +"\n")
-                        f.close()
                         processed_msg = for_proc_msg.value.decode()
                         log(processed_msg)
                         checkAction(processed_msg)
