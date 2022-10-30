@@ -7,16 +7,10 @@
 
 import sys
 import socket
-import os
-import time
-import platform   
+import time   
 import subprocess
 
 def main():
-
-	f = open("/tmp/Teste0.txt", "w")
-	f.write("SYSTEM TEST TIMESTAMPS\n")
-	f.close()
 
 	time.sleep(13)
 
@@ -52,14 +46,9 @@ def main():
 	# Message exchange Cycle
 	i = 0
 	
-	#ping(remoteClientAddr)
-	
 	time.sleep(2)
 	log(" - UDP COMMS - \n")
 	s.sendto(b"HELLO SERVER!", (remoteClientAddr, remport))
-	f = open("/tmp/Teste0.txt", "a")
-	f.write("FIRST PACKET Ts: " + str(time.time())+"\n")
-	f.close()
 	log("HELLO SERVER!")
 	
 	while True:
@@ -72,16 +61,13 @@ def main():
 	    if msg.decode() == "Bye Client":
 	    	break
 
-	    if i == 18:
-	    	time.sleep(1)
+	    if i == 36:
+	    	time.sleep(0.5)
 	    	send_msg = "Bye Server"
 	    	s.sendto(send_msg.encode(), (remoteClientAddr, remport))
-	    	f = open("/tmp/Teste0.txt", "a")
-	    	f.write("LAST PACKET Ts: " + str(time.time())+"\n")
-	    	f.close()
 	    	log(send_msg)
 	    else:
-	       time.sleep(1)
+	       time.sleep(0.5)
 	       send_msg = "MSG Number = " + str(i)
 	       s.sendto(send_msg.encode(), (remoteClientAddr, remport))
 	       log(send_msg)
@@ -89,17 +75,6 @@ def main():
 
 	# disconnect the client and remove file
 	s.close()
-
-#############################################
-def ping(remoteClientAddr):
-
-	# Option for the number of packets as a function of
-	param = '-n' if platform.system().lower()=='windows' else '-c'
-
-	# Building the command.
-	command = ['ping', param, '1', remoteClientAddr]
-
-	subprocess.call(command)
 
 ###############################################
 #			LOG			#
