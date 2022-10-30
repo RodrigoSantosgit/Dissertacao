@@ -7,18 +7,13 @@
 
 import sys
 import socket
-import time
-import platform   
+import time  
 import subprocess
 import requests
 
 def main():
 
 	time.sleep(10)
-	
-	f = open("/tmp/Teste0.txt", "w")
-	f.write("SYSTEM TEST TIMESTAMPS \n")
-	f.close()
 	
 	host = 'localhost' #default
 	name = '' # default
@@ -27,6 +22,7 @@ def main():
 	expMangFunc = '10.33.0.50' # default
 	serv_port = 5000 # default
 	inst = 0
+	mode = "rightaway" # default
 	
 	## ARGUMENT CHECKING -------
 	for i in range(1, len(sys.argv),2):
@@ -53,19 +49,8 @@ def main():
 	
 	
 	## INITIALIZATIONS -------
-	# Instantiate k8s deployment rightaway
-	if mode == "rightaway":
-	    f = open("/tmp/Teste0.txt", "a")
-	    f.write("INSTANTION REQUEST Ts: " + str(time.time()) +"\n")
-	    f.close()
-	    response = requests.put("http://" + expMangFunc + ":8000/instantiateService?namespace=default&name="+name+"&app="+name+"&container_name="+name+"&image="+image)
-	    inst = 1
-
 	# Instantiate Trigger for service instantiate
 	if mode == "triggerbased":
-	    f = open("/tmp/Teste0.txt", "a")
-	    f.write("FLOW CONTROL INSTANTION REQUEST Ts: " + str(time.time()) +"\n")
-	    f.close()
 	    response = requests.put("http://"+expMangFunc+":8000/instantiateTriggerBasedService?namespace=default&name="+name+"&app="+name+"&container_name="+name+"&image="+image+"&max_flows="+max_flows+"&ipaddr="+host+"&protoc=17"+"&port="+str(serv_port))
 	    inst = 1
 
@@ -88,22 +73,25 @@ def main():
 	msg = []
 	log(" - UDP COMMS - ")
 	sec = 0
+	num_msg = 0
 
 	while True:
 
 		try:
 			msg, addr = conn.recvfrom(1024)
+			num_msg = num_msg + 1
 		except:
 			if sec == 35:
 				log("Exiting")
 				break
 			elif sec == 10 and mode == "triggerbased":
-				f = open("/tmp/Teste0.txt", "a")
-				f.write("DELETION REQUEST Ts: " + str(time.time()) +"\n")
-				f.close()
 				response = requests.delete("http://" + expMangFunc +":8000/deleteTriggerBasedService?name="+name)
 				inst = 0
 			sec = sec + 5
+
+		if num_msg == 5 and mode == "rightaway":
+			response = requests.put("http://" + expMangFunc + ":8000/instantiateService?namespace=default&name="+name+"&app="+name+"&container_name="+name+"&image="+image)
+			inst = 1
 
 		if msg != []:
 			if msg.decode() == "Bye Server":
@@ -121,22 +109,7 @@ def main():
 	
 	# Delete k8s deployment instantiated in rightaway mode
 	if (mode == "rightaway" or mode == "triggerbased") and inst == 1:
-	    f = open("/tmp/Teste0.txt", "a")
-	    f.write("DELETION REQUEST Ts: " + str(time.time()) +"\n")
-	    f.close()
 	    response = requests.delete("http://" + expMangFunc +":8000/deleteService?name="+name)
-
-
-###############################################
-def ping(remoteClientAddr):
-
-	# Option for the number of packets as a function of
-	param = '-n' if platform.system().lower()=='windows' else '-c'
-
-	# Building the command.
-	command = ['ping', param, '1', remoteClientAddr]
-
-	subprocess.call(command)
 
 
 ###############################################
