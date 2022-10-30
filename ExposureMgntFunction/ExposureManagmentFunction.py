@@ -8,7 +8,6 @@
 from fastapi import FastAPI
 from kafka import KafkaProducer  
 import subprocess
-import time
 
 app = FastAPI()
 
@@ -17,12 +16,6 @@ global storage
 
 storage = {}
 producer = KafkaProducer(bootstrap_servers='10.0.2.15:9092')
-
-global f
-
-f = open("/tmp/Teste0.txt", "w")
-f.write("SYSTEM TEST TIMESTAMPS \n")
-f.close()
 
 ###############################################
 #		Instantiate Service		#
@@ -41,10 +34,6 @@ def instantiateService(namespace="default", name="None", app="None", container_n
 	except:
 		log('\n[ERROR] Something went wrong!\n')
 		return {"ERROR"}
-
-	f = open("/tmp/Teste0.txt", "a")
-	f.write("KAFKA INST MESSAGE Ts: " + str(time.time())+"\n")
-	f.close()
 
 	return {"SUCCESS"}
 
@@ -66,10 +55,6 @@ def deleteService(namespace="default", name="None"):
 	except:
 		log('\n[ERROR] Something went wrong!\n')
 		return {"ERROR"}
-		
-	f = open("/tmp/Teste0.txt", "a")
-	f.write("KAFKA DEL MESSAGE Ts: " + str(time.time())+"\n")
-	f.close()
 
 	return {"SUCCESS"}
 
@@ -94,10 +79,6 @@ def instantiateTriggerBasedService(namespace="default", name="None", app="None",
 	except:
 		log('\n[ERROR] Something went wrong!\n')
 		return {"ERROR"}
-		
-	f = open("/tmp/Teste0.txt", "a")
-	f.write("KAFKA FLOW COUNTER MESSAGE Ts: " + str(time.time())+"\n")
-	f.close()
 
 	return {"SUCCESS"}
 	
@@ -105,7 +86,7 @@ def instantiateTriggerBasedService(namespace="default", name="None", app="None",
 #	Delete Service Trigger Based		#
 ###############################################
 @app.delete("/deleteTriggerBasedService")
-def deleteTriggerBasedService(name="None"):
+def deleteTriggerBasedService(namespace="default", name="None"):
 
 	global producer
 	global storage
@@ -121,10 +102,6 @@ def deleteTriggerBasedService(name="None"):
 	except:
 		log('\n[ERROR] Something went wrong!\n')
 		return {"ERROR"}
-		
-	f = open("/tmp/Teste0.txt", "a")
-	f.write("KAFKA FLOW COUNTER DEL MESSAGE Ts: " + str(time.time())+"\n")
-	f.close()
 
 	return {"SUCCESS"}
 	
